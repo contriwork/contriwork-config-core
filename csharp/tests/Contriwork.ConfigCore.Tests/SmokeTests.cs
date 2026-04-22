@@ -5,17 +5,24 @@ namespace Contriwork.ConfigCore.Tests;
 public sealed class SmokeTests
 {
     [Fact]
-    public void Port_Interface_Is_Public()
+    public void Public_Surface_Is_Reachable()
     {
-        var t = typeof(IConfigCorePort);
-        Assert.True(t.IsPublic);
-        Assert.True(t.IsInterface);
+        Assert.True(typeof(ISource).IsPublic && typeof(ISource).IsInterface);
+        Assert.True(typeof(ISecretResolver).IsPublic && typeof(ISecretResolver).IsInterface);
+        Assert.True(typeof(ISchemaAdapter<>).IsPublic && typeof(ISchemaAdapter<>).IsInterface);
+        Assert.True(typeof(ConfigLoader).IsPublic && typeof(ConfigLoader).IsAbstract && typeof(ConfigLoader).IsSealed);
+        Assert.True(typeof(EnvSource).IsPublic);
+        Assert.True(typeof(FileSource).IsPublic);
+        Assert.True(typeof(InMemorySource).IsPublic);
+        Assert.True(typeof(EnvResolver).IsPublic);
+        Assert.True(typeof(FileResolver).IsPublic);
+        Assert.True(typeof(ChainResolver).IsPublic);
     }
 
     [Fact]
-    public void Port_Declares_Example_Method()
+    public void V0_Placeholder_Is_Removed()
     {
-        var method = typeof(IConfigCorePort).GetMethod(nameof(IConfigCorePort.ExampleAsync));
-        Assert.NotNull(method);
+        var asm = typeof(ConfigLoader).Assembly;
+        Assert.Null(asm.GetType("Contriwork.ConfigCore.IConfigCorePort"));
     }
 }
