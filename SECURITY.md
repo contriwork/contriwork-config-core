@@ -30,11 +30,12 @@ Findings — including any zero-day-class issues uncovered during development �
 
 ## Hardened Against (per release)
 
-> **TODO (paket sahibi):** This list MUST be updated each release with the actual attack classes the current version is hardened against. Empty rows are not acceptable for tagged releases.
+Each tagged release lists the attack classes audited and addressed at that version. No attack class is considered hardened-against until a concrete method is exposed on the port; scaffold-only releases are marked accordingly. The list is extended — never rewritten — as real surface lands.
 
 | Version | Attack class           | Status   | Notes |
 |---------|------------------------|----------|-------|
 | 0.0.0   | _scaffold, no surface_ | n/a      | initial template |
+| 0.0.1–0.0.4 | _scaffold, no surface_ | n/a  | `ConfigCorePort` / `IConfigCorePort` are interface-only; no methods are implemented. Releases cover infrastructure (publish pipeline, per-registry READMEs) and carry no attackable surface. |
 
 ## Scan Tooling (CI gates)
 

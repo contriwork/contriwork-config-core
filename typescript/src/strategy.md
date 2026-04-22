@@ -4,9 +4,7 @@ The ContriWork roadmap (`PACKAGES_ROADMAP.md §3.5`) lists five possible strateg
 
 ## Decision
 
-**Strategy A — pure-TS reimplementation** (default).
-
-> **TODO (paket sahibi):** Confirm strategy A is the right call for this package. If not, update the decision below and fill in the rationale.
+**Strategy A — pure-TS reimplementation.** Confirmed for the `ConfigCore` port.
 
 ## Alternatives considered
 
@@ -20,7 +18,7 @@ The ContriWork roadmap (`PACKAGES_ROADMAP.md §3.5`) lists five possible strateg
 
 ## Rationale
 
-> **TODO:** One-paragraph justification for the chosen strategy. If the package logic is pure and contract tests enforce parity, strategy A is the default. If any of (B)–(E) is chosen, document the blocking reason why (A) fails (e.g. "reference implementation is 20 KLOC of Rust — reimplementation risk is too high").
+`ConfigCore`'s surface is pure configuration logic (parsing, validation, defaults, error mapping) — no native codebase to wrap and no perf hot path that would justify WASM, N-API, sidecar, or HTTP client. Contract parity is enforced by `contract-tests/`, which runs the same fixtures against the Python, .NET, and TypeScript implementations, so the three code lines drift only when someone skips the test suite. The trade-off (three implementations to update for a behaviour change) is acceptable at the contract's current size and grows linearly, not exponentially, as operations are added. Revisit this decision only if a reference implementation in another language emerges whose behaviour is materially cheaper to wrap than to reimplement in TypeScript.
 
 ## Revisiting this decision
 
