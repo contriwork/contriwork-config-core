@@ -1,4 +1,4 @@
-# CONTRACT — PackageName
+# CONTRACT — ConfigCore
 
 This document is the **language-agnostic contract** for this package. It is the single source of truth for the public surface. Every change to public behavior MUST start here before any code is written in `python/`, `csharp/`, or `typescript/`.
 

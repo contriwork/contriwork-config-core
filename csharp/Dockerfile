@@ -2,18 +2,18 @@
 
 # ---- build stage ----------------------------------------------------------
 # TEMPLATE_USAGE.md §3: replace @sha256:TODO with an actual digest before release.
-FROM mcr.microsoft.com/dotnet/sdk:10.0@sha256:TODO AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0@sha256:8a90a473da5205a16979de99d2fc20975e922c68304f5c79d564e666dc3982fc AS build
 
 WORKDIR /src
 
 COPY VERSION /VERSION
 COPY csharp/Directory.Build.props ./Directory.Build.props
-COPY csharp/Contriwork.PackageName.sln ./
+COPY csharp/Contriwork.ConfigCore.sln ./
 COPY csharp/src/ ./src/
 COPY csharp/tests/ ./tests/
 
 RUN dotnet restore \
- && dotnet publish src/Contriwork.PackageName/Contriwork.PackageName.csproj \
+ && dotnet publish src/Contriwork.ConfigCore/Contriwork.ConfigCore.csproj \
       -c Release \
       -o /out \
       --no-restore \
@@ -21,7 +21,7 @@ RUN dotnet restore \
 
 # ---- runtime stage --------------------------------------------------------
 # Chiseled runtime: non-root `app` user (uid 1654), no shell, minimal surface.
-FROM mcr.microsoft.com/dotnet/runtime:10.0-jammy-chiseled-extra@sha256:TODO AS runtime
+FROM mcr.microsoft.com/dotnet/runtime:10.0-noble-chiseled-extra@sha256:e94f025683507f6723196a6953f51a520e2b9c6114b2f5a7114ff3fa065dfbd2 AS runtime
 
 WORKDIR /app
 COPY --from=build /out ./
@@ -35,4 +35,4 @@ USER app
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
   CMD ["dotnet", "--info"]
 
-ENTRYPOINT ["dotnet", "Contriwork.PackageName.dll"]
+ENTRYPOINT ["dotnet", "Contriwork.ConfigCore.dll"]

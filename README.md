@@ -1,13 +1,13 @@
 <div align="center">
 
-# contriwork-PACKAGE_NAME
+# contriwork-config-core
 
 **One API surface, three languages.**
 
-[![PyPI](https://img.shields.io/pypi/v/contriwork-PACKAGE_NAME.svg)](https://pypi.org/project/contriwork-PACKAGE_NAME/)
-[![NuGet](https://img.shields.io/nuget/v/Contriwork.PackageName.svg)](https://www.nuget.org/packages/Contriwork.PackageName/)
-[![npm](https://img.shields.io/npm/v/@contriwork/PACKAGE_NAME.svg)](https://www.npmjs.com/package/@contriwork/PACKAGE_NAME)
-[![CI](https://github.com/contriwork/contriwork-PACKAGE_NAME/actions/workflows/ci.yml/badge.svg)](https://github.com/contriwork/contriwork-PACKAGE_NAME/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/contriwork-config-core.svg)](https://pypi.org/project/contriwork-config-core/)
+[![NuGet](https://img.shields.io/nuget/v/Contriwork.ConfigCore.svg)](https://www.nuget.org/packages/Contriwork.ConfigCore/)
+[![npm](https://img.shields.io/npm/v/@contriwork/config-core.svg)](https://www.npmjs.com/package/@contriwork/config-core)
+[![CI](https://github.com/contriwork/contriwork-config-core/actions/workflows/ci.yml/badge.svg)](https://github.com/contriwork/contriwork-config-core/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
 </div>
@@ -22,9 +22,9 @@
 
 | Registry | Command                                                |
 |----------|--------------------------------------------------------|
-| PyPI     | `pip install contriwork-PACKAGE_NAME`                  |
-| NuGet    | `dotnet add package Contriwork.PackageName`            |
-| npm      | `npm install @contriwork/PACKAGE_NAME`                 |
+| PyPI     | `pip install contriwork-config-core`                  |
+| NuGet    | `dotnet add package Contriwork.ConfigCore`            |
+| npm      | `npm install @contriwork/config-core`                 |
 
 All three publish at the **same version** on the **same release**. See [`VERSION_MATRIX.md`](./VERSION_MATRIX.md) for runtime support per release.
 
@@ -33,21 +33,21 @@ All three publish at the **same version** on the **same release**. See [`VERSION
 ### Python
 
 ```python
-from contriwork_PACKAGE_NAME import PackageNamePort
+from contriwork_config_core import ConfigCorePort
 # TODO: example
 ```
 
 ### C#
 
 ```csharp
-using Contriwork.PackageName;
+using Contriwork.ConfigCore;
 // TODO: example
 ```
 
 ### TypeScript
 
 ```typescript
-import { PackageNamePort } from "@contriwork/PACKAGE_NAME";
+import { ConfigCorePort } from "@contriwork/config-core";
 // TODO: example
 ```
 

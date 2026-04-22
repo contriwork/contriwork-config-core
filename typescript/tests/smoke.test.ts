@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import type { PackageNamePort } from "../src/index.js";
+import type { ConfigCorePort } from "../src/index.js";
 
 describe("smoke", () => {
-  it("exports PackageNamePort as a type", () => {
-    const shape: PackageNamePort = {
+  it("exports ConfigCorePort as a type", () => {
+    const shape: ConfigCorePort = {
       example: async (input: string) => input,
     };
     expect(typeof shape.example).toBe("function");

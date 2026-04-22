@@ -6,37 +6,37 @@ The placeholder tokens used throughout the template:
 
 | Context | Placeholder | Replace with (example `config-core`) |
 |---------|-------------|--------------------------------------|
-| Python dist name | `contriwork-PACKAGE_NAME` | `contriwork-config-core` |
-| Python import | `contriwork_PACKAGE_NAME` | `contriwork_config_core` |
-| C# namespace / assembly | `Contriwork.PackageName` | `Contriwork.ConfigCore` |
-| TypeScript symbol | `PackageName` | `ConfigCore` |
-| npm package | `@contriwork/PACKAGE_NAME` | `@contriwork/config-core` |
+| Python dist name | `contriwork-config-core` | `contriwork-config-core` |
+| Python import | `contriwork_config_core` | `contriwork_config_core` |
+| C# namespace / assembly | `Contriwork.ConfigCore` | `Contriwork.ConfigCore` |
+| TypeScript symbol | `ConfigCore` | `ConfigCore` |
+| npm package | `@contriwork/config-core` | `@contriwork/config-core` |
 
 ---
 
 ## 1. Rename directories
 
 ```bash
-git mv python/src/contriwork_PACKAGE_NAME python/src/contriwork_<your_name>
-git mv csharp/src/Contriwork.PackageName csharp/src/Contriwork.<YourName>
-git mv csharp/tests/Contriwork.PackageName.Tests csharp/tests/Contriwork.<YourName>.Tests
+git mv python/src/contriwork_config_core python/src/contriwork_<your_name>
+git mv csharp/src/Contriwork.ConfigCore csharp/src/Contriwork.<YourName>
+git mv csharp/tests/Contriwork.ConfigCore.Tests csharp/tests/Contriwork.<YourName>.Tests
 ```
 
 ## 2. Global find-and-replace
 
 Use your editor's project-wide replace (case-sensitive). Do the replacements in this order to avoid partial-match collisions:
 
-1. `@contriwork/PACKAGE_NAME` → `@contriwork/<your-name>` (kebab-case, npm)
-2. `contriwork-PACKAGE_NAME` → `contriwork-<your-name>` (kebab-case, PyPI)
-3. `contriwork_PACKAGE_NAME` → `contriwork_<your_name>` (snake_case, Python import)
-4. `Contriwork.PackageName` → `Contriwork.<YourName>` (PascalCase, C#)
-5. `PackageName` → `<YourName>` (PascalCase, TypeScript symbols)
+1. `@contriwork/config-core` → `@contriwork/<your-name>` (kebab-case, npm)
+2. `contriwork-config-core` → `contriwork-<your-name>` (kebab-case, PyPI)
+3. `contriwork_config_core` → `contriwork_<your_name>` (snake_case, Python import)
+4. `Contriwork.ConfigCore` → `Contriwork.<YourName>` (PascalCase, C#)
+5. `ConfigCore` → `<YourName>` (PascalCase, TypeScript symbols)
 6. `PACKAGE_NAME` → `<your-name>` or `<your_name>` — context-dependent; verify by diff.
 
 Rename C# solution file:
 
 ```bash
-git mv csharp/Contriwork.PackageName.sln csharp/Contriwork.<YourName>.sln
+git mv csharp/Contriwork.ConfigCore.sln csharp/Contriwork.<YourName>.sln
 ```
 
 ## 3. Pin Dockerfile base image digests
