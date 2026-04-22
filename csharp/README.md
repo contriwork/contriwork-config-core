@@ -1,7 +1,7 @@
-# contriwork-config-core (Python)
+# Contriwork.ConfigCore (.NET)
 
-Python adapter for the ContriWork **config-core** port. One API surface,
-three languages (Python / .NET / npm) — this package is the Python
+.NET adapter for the ContriWork **ConfigCore** port. One API surface,
+three languages (Python / .NET / npm) — this package is the .NET
 implementation.
 
 Cross-language specification, contract, and release history live in the
@@ -11,31 +11,31 @@ Cross-language specification, contract, and release history live in the
 - [`CONTRACT.md`](https://github.com/contriwork/contriwork-config-core/blob/main/CONTRACT.md) — language-agnostic port spec
 - [`CHANGELOG.md`](https://github.com/contriwork/contriwork-config-core/blob/main/CHANGELOG.md)
 
-Sister packages: [`Contriwork.ConfigCore`](https://www.nuget.org/packages/Contriwork.ConfigCore) (NuGet), [`@contriwork/config-core`](https://www.npmjs.com/package/@contriwork/config-core) (npm).
+Sister packages: [`contriwork-config-core`](https://pypi.org/project/contriwork-config-core/) (PyPI), [`@contriwork/config-core`](https://www.npmjs.com/package/@contriwork/config-core) (npm).
 
 ## Install
 
 ```bash
-pip install contriwork-config-core
+dotnet add package Contriwork.ConfigCore
 ```
 
-Requires **Python ≥ 3.13**.
+Targets **.NET 10 LTS**.
 
 ## Quick start
 
-```python
-from contriwork_config_core import ConfigCorePort
+```csharp
+using Contriwork.ConfigCore;
 
-# TODO: one-line example once the port has real methods.
+// TODO: one-line example once the port has real methods.
 ```
 
 ## Local development
 
 ```bash
-uv sync --all-extras
-uv run pytest
-uv run ruff check
-uv run mypy src
+dotnet restore
+dotnet build
+dotnet test
+dotnet format --verify-no-changes
 ```
 
 ## License
