@@ -8,9 +8,25 @@ Each release MUST contain three language sub-sections (`### Python`, `### C#`, `
 
 ## [Unreleased]
 
+## [0.0.3] — 2026-04-22
+
+Second retry of the infrastructure smoke test. `0.0.2` fixed the NuGet username casing but the wildcard trust policy on nuget.org remained in the 7-day dormant "Use within N days to keep it permanently active" state and silently rejected the OIDC claim even after `Activate for 7 days`. Replaced it with a package-specific policy (`Repository: contriwork-config-core` instead of `*`, marked **Active**). No code change from 0.0.2; this release exists to drive the first successful NuGet publish.
+
+### Python
+
+- Republish as `contriwork-config-core==0.0.3` (identical to 0.0.2).
+
+### C#
+
+- First successful publish on NuGet as `Contriwork.ConfigCore@0.0.3`. 0.0.1 and 0.0.2 were never published to NuGet (see notes on each).
+
+### npm
+
+- Republish as `@contriwork/config-core@0.0.3` (identical to 0.0.2); `latest` dist-tag moves to 0.0.3.
+
 ## [0.0.2] — 2026-04-22
 
-Re-release of the infrastructure smoke test. `0.0.1` shipped on PyPI and npm but failed on NuGet with `Token exchange failed (401): No matching trust policy owned by user 'contriwork' was found` — the NuGet account is registered as `ContriWork` (PascalCase) and the trust-policy lookup is case-sensitive, so the lowercase `user: contriwork` in `release-dotnet.yml` never matched. Fixed by pinning `user: ContriWork`. No behaviour change.
+Re-release intended to fix `0.0.1`'s NuGet failure. The original 401 error reported `user 'contriwork'` in lowercase; the NuGet account is registered as `ContriWork` (PascalCase), so we pinned `user: ContriWork` in `release-dotnet.yml`. NuGet still rejected the claim — the real blocker turned out to be the wildcard trust policy's dormant grace-period state, which was only surfaced once the case fix ruled out the earlier hypothesis. Superseded by 0.0.3.
 
 ### Python
 
@@ -18,7 +34,7 @@ Re-release of the infrastructure smoke test. `0.0.1` shipped on PyPI and npm but
 
 ### C#
 
-- First successful publish on NuGet as `Contriwork.ConfigCore@0.0.2`. 0.0.1 was never published to NuGet.
+- Attempted publish of `Contriwork.ConfigCore@0.0.2`; failed on the OIDC token exchange (same 401 as 0.0.1, different root cause). Superseded by 0.0.3.
 
 ### npm
 
@@ -40,6 +56,7 @@ Infrastructure smoke-test release. Publishes the scaffold to PyPI, NuGet, and np
 
 - Initial scaffold release on npm as `@contriwork/config-core`. The `0.0.0` placeholder previously published under the `pending` dist-tag is superseded; `0.0.1` becomes `latest`.
 
-[Unreleased]: https://github.com/contriwork/contriwork-config-core/compare/v0.0.2...HEAD
+[Unreleased]: https://github.com/contriwork/contriwork-config-core/compare/v0.0.3...HEAD
+[0.0.3]: https://github.com/contriwork/contriwork-config-core/compare/v0.0.2...v0.0.3
 [0.0.2]: https://github.com/contriwork/contriwork-config-core/compare/v0.0.1...v0.0.2
 [0.0.1]: https://github.com/contriwork/contriwork-config-core/compare/v0.0.0...v0.0.1
