@@ -8,7 +8,7 @@ Contract revision (bumped on any behavior-visible change): **v0**
 
 ## Overview
 
-> **TODO (paket sahibi):** One paragraph. What problem does this package solve? Who is the consumer? What does the consumer hand in, and what does it get back?
+`ConfigCore` is the contract layer for ContriWork's cross-language configuration port. Its job is to define a single language-agnostic interface — operations, error codes, and config keys — so that the Python, .NET, and Node.js implementations stay behaviourally identical and callers can write against the same shape regardless of runtime. At contract revision **v0** the port is interface-only: `ConfigCorePort` / `IConfigCorePort` are published as type declarations so downstream code can wire against them, but no operations are specified yet. The first behaviour-bearing revision ships as **v1**; until then, this document describes the shape the contract will take rather than behaviour consumers can rely on.
 
 ---
 
