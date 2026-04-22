@@ -4,13 +4,13 @@ from __future__ import annotations
 
 
 def test_package_imports() -> None:
-    import contriwork_PACKAGE_NAME
+    import contriwork_config_core
 
-    assert contriwork_PACKAGE_NAME.__version__
+    assert contriwork_config_core.__version__
 
 
 def test_port_is_exported() -> None:
-    from contriwork_PACKAGE_NAME import PackageNamePort
+    from contriwork_config_core import ConfigCorePort
 
-    assert PackageNamePort is not None
-    assert hasattr(PackageNamePort, "example")
+    assert ConfigCorePort is not None
+    assert hasattr(ConfigCorePort, "example")
