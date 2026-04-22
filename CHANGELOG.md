@@ -8,6 +8,22 @@ Each release MUST contain three language sub-sections (`### Python`, `### C#`, `
 
 ## [Unreleased]
 
+## [0.0.4] — 2026-04-22
+
+Docs-only patch: ship per-registry READMEs so each package page displays content tailored to its registry's consumer. Backport of template commit `62ff29c`. No code changes; supported runtimes identical to 0.0.3.
+
+### Python
+
+- docs: per-registry README replaces generic placeholder; absolute GitHub URLs for cross-language links (relative paths broke on PyPI).
+
+### C#
+
+- docs: new C#-specific README ships to NuGet; csproj no longer packs the repo-root README (which contained cross-registry badges and Python/npm references).
+
+### npm
+
+- docs: new npm-specific README ships to npmjs.com (previous release had "no README" on the package page).
+
 ## [0.0.3] — 2026-04-22
 
 Second retry of the infrastructure smoke test. `0.0.2` fixed the NuGet username casing but the wildcard trust policy on nuget.org remained in the 7-day dormant "Use within N days to keep it permanently active" state and silently rejected the OIDC claim even after `Activate for 7 days`. Replaced it with a package-specific policy (`Repository: contriwork-config-core` instead of `*`, marked **Active**). No code change from 0.0.2; this release exists to drive the first successful NuGet publish.
@@ -56,7 +72,8 @@ Infrastructure smoke-test release. Publishes the scaffold to PyPI, NuGet, and np
 
 - Initial scaffold release on npm as `@contriwork/config-core`. The `0.0.0` placeholder previously published under the `pending` dist-tag is superseded; `0.0.1` becomes `latest`.
 
-[Unreleased]: https://github.com/contriwork/contriwork-config-core/compare/v0.0.3...HEAD
+[Unreleased]: https://github.com/contriwork/contriwork-config-core/compare/v0.0.4...HEAD
+[0.0.4]: https://github.com/contriwork/contriwork-config-core/compare/v0.0.3...v0.0.4
 [0.0.3]: https://github.com/contriwork/contriwork-config-core/compare/v0.0.2...v0.0.3
 [0.0.2]: https://github.com/contriwork/contriwork-config-core/compare/v0.0.1...v0.0.2
 [0.0.1]: https://github.com/contriwork/contriwork-config-core/compare/v0.0.0...v0.0.1

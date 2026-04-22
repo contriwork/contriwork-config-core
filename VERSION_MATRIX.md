@@ -8,6 +8,7 @@ This file documents which language runtime versions and contract revision each r
 | 0.0.1   | 3.13   | 10.0 | 24   | v0       | pure-TS      | 2026-04-22 (NuGet failed — superseded by 0.0.3) |
 | 0.0.2   | 3.13   | 10.0 | 24   | v0       | pure-TS      | 2026-04-22 (NuGet failed — superseded by 0.0.3) |
 | 0.0.3   | 3.13   | 10.0 | 24   | v0       | pure-TS      | 2026-04-22 |
+| 0.0.4   | 3.13   | 10.0 | 24   | v0       | pure-TS      | 2026-04-22 (docs-only; per-registry READMEs) |
 
 ## Rules
 
