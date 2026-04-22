@@ -1,0 +1,68 @@
+{
+  "name": "@contriwork/PACKAGE_NAME",
+  "version": "0.0.0",
+  "description": "TODO: one-line description of the package. Mirrors CONTRACT.md.",
+  "type": "module",
+  "license": "MIT",
+  "author": "ContriWork",
+  "homepage": "https://github.com/contriwork/contriwork-PACKAGE_NAME",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/contriwork/contriwork-PACKAGE_NAME.git"
+  },
+  "bugs": {
+    "url": "https://github.com/contriwork/contriwork-PACKAGE_NAME/issues"
+  },
+  "keywords": ["contriwork"],
+  "engines": {
+    "node": ">=24"
+  },
+  "packageManager": "pnpm@9.15.0",
+  "sideEffects": false,
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint . --max-warnings=0",
+    "lint:fix": "eslint . --fix",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@typescript-eslint/eslint-plugin": "^8.18.1",
+    "@typescript-eslint/parser": "^8.18.1",
+    "eslint": "^9.17.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-security": "^3.0.1",
+    "prettier": "^3.4.2",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}

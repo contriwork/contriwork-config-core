@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <PackageId>Contriwork.PackageName</PackageId>
+    <Description>TODO: one-line description of the package. Mirrors CONTRACT.md.</Description>
+    <PackageTags>contriwork</PackageTags>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <IsPackable>true</IsPackable>
+    <RootNamespace>Contriwork.PackageName</RootNamespace>
+    <AssemblyName>Contriwork.PackageName</AssemblyName>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+</Project>
