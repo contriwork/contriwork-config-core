@@ -1,16 +1,64 @@
 """contriwork-config-core — Python adapter.
 
-Public surface re-exports from :mod:`contriwork_config_core.port`. Do not
-import concrete adapter classes from outside — they are internal detail.
+Cross-language static configuration loader. See CONTRACT.md for the
+language-agnostic specification; this module is the Python binding.
+
+Example::
+
+    from pydantic import BaseModel
+    from contriwork_config_core import (
+        load_config, EnvSource, FileSource, PydanticAdapter,
+    )
+
+    class AppConfig(BaseModel):
+        db_url: str
+        debug: bool = False
+
+    cfg = await load_config(
+        schema=PydanticAdapter(AppConfig),
+        sources=[FileSource("./cfg.yml"), EnvSource(prefix="APP_")],
+    )
 """
 
 from __future__ import annotations
 
 from importlib.metadata import PackageNotFoundError, version
 
-from .port import ConfigCorePort
+from .errors import (
+    ConfigError,
+    SecretRefMalformed,
+    SecretRefUnresolved,
+    SecretSchemeUnsupported,
+    SourceParseFailed,
+    SourceUnavailable,
+    ValidationFailed,
+)
+from .loader import load_config
+from .resolvers import ChainResolver, EnvResolver, FileResolver, SecretResolver
+from .schema import PydanticAdapter, SchemaAdapter
+from .sources import EnvSource, FileSource, InMemorySource, Source
 
-__all__ = ["ConfigCorePort", "__version__"]
+__all__ = [
+    "ChainResolver",
+    "ConfigError",
+    "EnvResolver",
+    "EnvSource",
+    "FileResolver",
+    "FileSource",
+    "InMemorySource",
+    "PydanticAdapter",
+    "SchemaAdapter",
+    "SecretRefMalformed",
+    "SecretRefUnresolved",
+    "SecretResolver",
+    "SecretSchemeUnsupported",
+    "Source",
+    "SourceParseFailed",
+    "SourceUnavailable",
+    "ValidationFailed",
+    "__version__",
+    "load_config",
+]
 
 try:
     __version__ = version("contriwork-config-core")
