@@ -1,7 +1,7 @@
 {
   "name": "@contriwork/config-core",
   "version": "0.0.0",
-  "description": "TODO: one-line description of the package. Mirrors CONTRACT.md.",
+  "description": "Cross-language static configuration loader — env + files + secret refs, schema-validated.",
   "type": "module",
   "license": "MIT",
   "author": "ContriWork",

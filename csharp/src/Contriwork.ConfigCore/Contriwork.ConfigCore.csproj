@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <PackageId>Contriwork.ConfigCore</PackageId>
-    <Description>TODO: one-line description of the package. Mirrors CONTRACT.md.</Description>
+    <Description>Cross-language static configuration loader — env + files + secret refs, schema-validated.</Description>
     <PackageTags>contriwork</PackageTags>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <IsPackable>true</IsPackable>
