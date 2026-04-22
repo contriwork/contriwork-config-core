@@ -95,6 +95,14 @@ jobs:
       security-events: write
       actions: read
       contents: read
+    env:
+      # CodeQL's diff-informed analysis shells out to `git fetch origin <base>`
+      # at query time; on GitHub-hosted PR-event runners this call is flaky
+      # ("error processing shallow info: 4") even with fetch-depth: 0, because
+      # actions/checkout materialises the PR merge ref but not a usable
+      # origin/<base> remote-tracking ref. Full-DB analysis is deterministic
+      # and only marginally slower on a small scaffold.
+      CODEQL_ACTION_DIFF_INFORMED_QUERIES: 'false'
     strategy:
       fail-fast: false
       matrix:
