@@ -43,6 +43,16 @@ export default [
       ],
       "@typescript-eslint/explicit-function-return-type": "warn",
       "no-console": ["warn", { allow: ["warn", "error"] }],
+      // A configuration merger is fundamentally dynamic-key indexing: keys
+      // come from config files / env vars we're parsing, not from user input
+      // into a shell or SQL query. The detect-object-injection rule targets
+      // `obj[attackerControlledString]` shell/injection patterns, which do
+      // not apply here.
+      "security/detect-object-injection": "off",
+      // FileSource and FileResolver are explicitly designed to read files
+      // at paths the caller provides. Flagging every dynamic readFile in a
+      // filesystem-adapter library is a false positive.
+      "security/detect-non-literal-fs-filename": "off",
     },
   },
   {

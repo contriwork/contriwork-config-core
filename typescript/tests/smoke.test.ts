@@ -1,11 +1,27 @@
 import { describe, expect, it } from "vitest";
-import type { ConfigCorePort } from "../src/index.js";
+
+import {
+  ChainResolver,
+  ConfigError,
+  EnvResolver,
+  EnvSource,
+  FileResolver,
+  FileSource,
+  InMemorySource,
+  ZodAdapter,
+  loadConfig,
+} from "../src/index.js";
 
 describe("smoke", () => {
-  it("exports ConfigCorePort as a type", () => {
-    const shape: ConfigCorePort = {
-      example: async (input: string) => input,
-    };
-    expect(typeof shape.example).toBe("function");
+  it("public surface is importable", () => {
+    expect(loadConfig).toBeInstanceOf(Function);
+    expect(EnvSource).toBeInstanceOf(Function);
+    expect(FileSource).toBeInstanceOf(Function);
+    expect(InMemorySource).toBeInstanceOf(Function);
+    expect(EnvResolver).toBeInstanceOf(Function);
+    expect(FileResolver).toBeInstanceOf(Function);
+    expect(ChainResolver).toBeInstanceOf(Function);
+    expect(ZodAdapter).toBeInstanceOf(Function);
+    expect(ConfigError).toBeInstanceOf(Function);
   });
 });
