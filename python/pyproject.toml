@@ -22,7 +22,10 @@ classifiers = [
   "Typing :: Typed",
 ]
 dynamic = ["version"]
-dependencies = []
+dependencies = [
+  "pydantic>=2.6",
+  "pyyaml>=6.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/contriwork/contriwork-config-core"
@@ -37,6 +40,7 @@ dev = [
   "ruff>=0.8",
   "mypy>=1.13",
   "pip-audit>=2.7",
+  "types-PyYAML>=6.0",
 ]
 
 [tool.hatch.version]
@@ -75,6 +79,11 @@ ignore = ["S101"]       # allow assert in tests
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = ["S", "N"]
+# Exception class names mirror their stable CONTRACT.md error codes
+# (VALIDATION_FAILED → ValidationFailed, etc.) rather than PEP 8's
+# "SomethingError" convention. The code is the contract; the class name
+# is local convention.
+"src/contriwork_config_core/errors.py" = ["N818"]
 
 [tool.mypy]
 python_version = "3.13"
