@@ -8,13 +8,13 @@ The ContriWork roadmap (`PACKAGES_ROADMAP.md §3.5`) lists five possible strateg
 
 ## Alternatives considered
 
-| ID | Name | When to pick | Trade-off |
-|----|------|--------------|-----------|
-| A | **Pure-TS reimplementation** | Pure-logic package (parsers, validators, encoders, algorithms). Zero native deps. | Must maintain three code lines. Behaviour parity enforced only by `contract-tests`. |
-| B | **WASM** (compile Rust/Go/C++ to WebAssembly) | Perf-critical core shared between runtimes. | Toolchain complexity; binary size; restricted syscalls. |
-| C | **N-API / node-gyp native addon** | Existing C/C++ codebase, must match bit-for-bit. | Cross-platform build pain; prebuilt-binary hosting; sandbox/security surface. |
-| D | **Sidecar** (bundled binary / subprocess) | Large Python/.NET runtime, not worth rewriting. | Process management, startup cost, platform-matrix of binaries. |
-| E | **HTTP client** (pointing at a hosted service) | Package wraps a SaaS or centralised service the org runs. | Requires infra; not usable offline; introduces network as dependency. |
+| ID  | Name                                           | When to pick                                                                      | Trade-off                                                                           |
+| --- | ---------------------------------------------- | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| A   | **Pure-TS reimplementation**                   | Pure-logic package (parsers, validators, encoders, algorithms). Zero native deps. | Must maintain three code lines. Behaviour parity enforced only by `contract-tests`. |
+| B   | **WASM** (compile Rust/Go/C++ to WebAssembly)  | Perf-critical core shared between runtimes.                                       | Toolchain complexity; binary size; restricted syscalls.                             |
+| C   | **N-API / node-gyp native addon**              | Existing C/C++ codebase, must match bit-for-bit.                                  | Cross-platform build pain; prebuilt-binary hosting; sandbox/security surface.       |
+| D   | **Sidecar** (bundled binary / subprocess)      | Large Python/.NET runtime, not worth rewriting.                                   | Process management, startup cost, platform-matrix of binaries.                      |
+| E   | **HTTP client** (pointing at a hosted service) | Package wraps a SaaS or centralised service the org runs.                         | Requires infra; not usable offline; introduces network as dependency.               |
 
 ## Rationale
 
