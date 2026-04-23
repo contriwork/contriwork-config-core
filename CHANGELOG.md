@@ -8,6 +8,85 @@ Each release MUST contain three language sub-sections (`### Python`, `### C#`, `
 
 ## [Unreleased]
 
+## [0.1.0] — 2026-04-22
+
+First **behaviour-bearing** release. Contract revision bumps v0 → v1; the
+scaffolds shipped in 0.0.1 – 0.0.4 become functional libraries.
+
+Accumulated scope since 0.0.4 (PRs #21 – #27):
+
+- Contract v1 specified (PR #23): `load_config` / `LoadConfigAsync` /
+  `loadConfig` + `Source` and `SecretResolver` protocols + `SchemaAdapter`
+  interface + six-entry error taxonomy + `${scheme:value}` secret refs
+  with `$${…}` escape + strict merge rules (first source = lowest
+  precedence; deep-merge dicts; replace lists and scalars).
+- Per-language implementations of the full v1 surface (PRs #25 / #26 /
+  #27). Identical shape across Python / .NET / TypeScript modulo
+  language-idiomatic casing.
+- Housekeeping: manifest descriptions (PR #24), contract-doc polish
+  (PR #21), release tooling (`scripts/release.sh` + `docs/RELEASE.md`,
+  PR #22) — none of which are in package tarballs but cumulatively clean
+  up consumer-facing surface (registry descriptions, linked GitHub
+  docs).
+
+Out of scope for 0.1.0 (explicitly deferred):
+
+- External secret managers (Vault, AWS Secrets Manager, Azure Key Vault,
+  GCP Secret Manager, Doppler, 1Password) — they will ship as separate
+  adapter packages that implement `Source` and/or `SecretResolver`.
+- Runtime-mutable / UI-editable settings — that's an application concern
+  (Digital Worker uses its own `AppSetting` table); config-core stops at
+  bootstrap-time static config.
+- Hot reload. Reload = call the loader again.
+- `contract-tests/test_cases.json` fixture fill-in. The runners still
+  skip in all three languages; fixture format is its own design task.
+
+### Python
+
+- Added `load_config(schema, sources, resolver?)` as the async entry
+  point.
+- Added built-in sources: `EnvSource(prefix, separator)`,
+  `FileSource(path, format?, required?)` (yaml/json/toml with
+  extension-inferred format), `InMemorySource`.
+- Added built-in resolvers: `EnvResolver`, `FileResolver(base_dir?)`,
+  `ChainResolver(*resolvers)`.
+- Added `PydanticAdapter(BaseModel)` as the default schema adapter;
+  `SchemaAdapter` Protocol is pluggable.
+- Added `ConfigError` hierarchy (6 classes matching CONTRACT codes).
+- New runtime deps: `pydantic>=2.6`, `pyyaml>=6.0`.
+- Removed v0 `ConfigCorePort` Protocol placeholder; function-first API.
+
+### C#
+
+- Added `ConfigLoader.LoadConfigAsync<T>(schema, sources, resolver?)`
+  plus a convenience overload that defaults to `EnvResolver`.
+- Added `ISource` implementations: `EnvSource`, `FileSource`
+  (yaml/json/toml via YamlDotNet + Tomlyn + System.Text.Json),
+  `InMemorySource`.
+- Added `ISecretResolver` implementations: `EnvResolver`, `FileResolver`,
+  `ChainResolver`.
+- Added `ISchemaAdapter<T>` + `DataAnnotationsAdapter<T>` that wraps
+  `Validator.TryValidateObject`. Applies `JsonNamingPolicy.SnakeCaseLower`
+  and a lenient bool converter so env-supplied strings ("true", "42")
+  hydrate into `bool` / `int` properties.
+- Added `ConfigException` abstract base with six sealed subclasses
+  matching CONTRACT codes.
+- Package deps: `YamlDotNet 16.3.0`, `Tomlyn 0.19.0`.
+- Removed v0 `IConfigCorePort` interface placeholder.
+
+### npm
+
+- Added `loadConfig({ schema, sources, resolver? })` as the async entry
+  point (options-bag signature).
+- Added source classes: `EnvSource`, `FileSource` (yaml/json/toml),
+  `InMemorySource`.
+- Added resolver classes: `EnvResolver`, `FileResolver`, `ChainResolver`.
+- Added `ZodAdapter<S>` as the default schema adapter; `SchemaAdapter<T>`
+  is one-method-wide so valibot / arktype / ajv adapters are one file.
+- Added `ConfigError` class hierarchy matching CONTRACT codes.
+- New runtime deps: `zod`, `yaml`, `smol-toml`.
+- Removed v0 `ConfigCorePort` type placeholder.
+
 ## [0.0.4] — 2026-04-22
 
 Docs-only patch: ship per-registry READMEs so each package page displays content tailored to its registry's consumer. Backport of template commit `62ff29c`. No code changes; supported runtimes identical to 0.0.3.
@@ -72,7 +151,8 @@ Infrastructure smoke-test release. Publishes the scaffold to PyPI, NuGet, and np
 
 - Initial scaffold release on npm as `@contriwork/config-core`. The `0.0.0` placeholder previously published under the `pending` dist-tag is superseded; `0.0.1` becomes `latest`.
 
-[Unreleased]: https://github.com/contriwork/contriwork-config-core/compare/v0.0.4...HEAD
+[Unreleased]: https://github.com/contriwork/contriwork-config-core/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/contriwork/contriwork-config-core/compare/v0.0.4...v0.1.0
 [0.0.4]: https://github.com/contriwork/contriwork-config-core/compare/v0.0.3...v0.0.4
 [0.0.3]: https://github.com/contriwork/contriwork-config-core/compare/v0.0.2...v0.0.3
 [0.0.2]: https://github.com/contriwork/contriwork-config-core/compare/v0.0.1...v0.0.2
