@@ -15,6 +15,13 @@ import { SourceParseFailed, SourceUnavailable } from "./errors.js";
 
 export type FileFormat = "yaml" | "json" | "toml";
 
+/**
+ * Categories of JSON literal that {@link EnvSource} may decode when its
+ * {@link EnvSourceOptions.decodeJsonFor} opt-in flag enables them. Mirrors
+ * the Python `JsonCategory` Literal and the C# `JsonCategory` enum.
+ */
+export type JsonCategory = "list" | "dict" | "bool" | "int" | "float";
+
 /** A source of configuration keys. */
 export interface Source {
   /**
@@ -40,6 +47,14 @@ export interface EnvSourceOptions {
   prefix?: string;
   /** Delimiter that introduces a nesting level. Default: `__`. */
   separator?: string;
+  /**
+   * Opt-in JSON decode categories. Default: `undefined` (no decoding,
+   * preserves the v0.1.0 behaviour). When set, each env value is
+   * best-effort parsed with `JSON.parse`; the parsed value replaces the
+   * raw string only when its category is in this list. Otherwise the raw
+   * string is kept (the schema validator decides).
+   */
+  decodeJsonFor?: readonly JsonCategory[];
 }
 
 /**
@@ -50,14 +65,16 @@ export interface EnvSourceOptions {
 export class EnvSource implements Source {
   private readonly prefix: string;
   private readonly separator: string;
+  private readonly decodeJsonFor: ReadonlySet<JsonCategory>;
 
   constructor(options: EnvSourceOptions = {}) {
-    const { prefix = "", separator = "__" } = options;
+    const { prefix = "", separator = "__", decodeJsonFor } = options;
     if (separator.length === 0) {
       throw new Error("separator must be a non-empty string");
     }
     this.prefix = prefix;
     this.separator = separator;
+    this.decodeJsonFor = new Set(decodeJsonFor ?? []);
   }
 
   snapshot(): Promise<Record<string, unknown>> {
@@ -68,10 +85,33 @@ export class EnvSource implements Source {
       const stripped = rawKey.slice(this.prefix.length);
       if (stripped.length === 0) continue;
       const path = stripped.toLowerCase().split(this.separator);
-      setNested(result, path, value);
+      const decoded = this.maybeDecode(value);
+      setNested(result, path, decoded);
     }
     return Promise.resolve(result);
   }
+
+  private maybeDecode(value: string): unknown {
+    if (this.decodeJsonFor.size === 0) return value;
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(value);
+    } catch {
+      return value;
+    }
+    const category = jsonCategoryOf(parsed);
+    return category !== null && this.decodeJsonFor.has(category) ? parsed : value;
+  }
+}
+
+function jsonCategoryOf(value: unknown): JsonCategory | null {
+  if (Array.isArray(value)) return "list";
+  if (value !== null && typeof value === "object") return "dict";
+  if (typeof value === "boolean") return "bool";
+  if (typeof value === "number") {
+    return Number.isInteger(value) ? "int" : "float";
+  }
+  return null;
 }
 
 export interface FileSourceOptions {
@@ -160,7 +200,7 @@ function parse(content: string, format: FileFormat): unknown {
 function setNested(
   target: Record<string, unknown>,
   path: string[],
-  value: string,
+  value: unknown,
 ): void {
   let cursor = target;
   for (let i = 0; i < path.length - 1; i++) {

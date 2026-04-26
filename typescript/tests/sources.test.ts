@@ -80,6 +80,61 @@ describe("EnvSource", () => {
   it("empty separator throws", () => {
     expect(() => new EnvSource({ separator: "" })).toThrowError();
   });
+
+  // ── decodeJsonFor ────────────────────────────────────────────────
+
+  it("decode_json list", async () => {
+    setEnv("APP_HOSTS", '["a", "b", "c"]');
+    const snap = await new EnvSource({
+      prefix: "APP_",
+      decodeJsonFor: ["list"],
+    }).snapshot();
+    expect(snap).toEqual({ hosts: ["a", "b", "c"] });
+  });
+
+  it("decode_json dict", async () => {
+    setEnv("APP_RATE_LIMITS", '{"market_data": 10}');
+    const snap = await new EnvSource({
+      prefix: "APP_",
+      decodeJsonFor: ["dict"],
+    }).snapshot();
+    expect(snap).toEqual({ rate_limits: { market_data: 10 } });
+  });
+
+  it("decode_json off keeps raw string (back-compat)", async () => {
+    setEnv("APP_HOSTS", '["a", "b"]');
+    const snap = await new EnvSource({ prefix: "APP_" }).snapshot();
+    expect(snap).toEqual({ hosts: '["a", "b"]' });
+  });
+
+  it("decode_json invalid falls back to raw string", async () => {
+    setEnv("APP_HOSTS", "not-json");
+    const snap = await new EnvSource({
+      prefix: "APP_",
+      decodeJsonFor: ["list"],
+    }).snapshot();
+    expect(snap).toEqual({ hosts: "not-json" });
+  });
+
+  it("decode_json wrong category falls back", async () => {
+    setEnv("APP_DEBUG", "true");
+    const snap = await new EnvSource({
+      prefix: "APP_",
+      decodeJsonFor: ["list"],
+    }).snapshot();
+    expect(snap).toEqual({ debug: "true" });
+  });
+
+  it("decode_json bool / int / float", async () => {
+    setEnv("APP_DEBUG", "true");
+    setEnv("APP_POOL", "10");
+    setEnv("APP_RATIO", "0.5");
+    const snap = await new EnvSource({
+      prefix: "APP_",
+      decodeJsonFor: ["bool", "int", "float"],
+    }).snapshot();
+    expect(snap).toEqual({ debug: true, pool: 10, ratio: 0.5 });
+  });
 });
 
 describe("FileSource", () => {

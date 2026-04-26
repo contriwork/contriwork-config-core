@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import os
 import tomllib
+from collections.abc import Iterable
 from pathlib import Path
 from typing import Any, Literal, Protocol, runtime_checkable
 
@@ -19,6 +20,7 @@ import yaml
 from .errors import SourceParseFailed, SourceUnavailable
 
 Format = Literal["yaml", "json", "toml"]
+JsonCategory = Literal["list", "dict", "bool", "int", "float"]
 
 
 @runtime_checkable
@@ -59,15 +61,39 @@ class EnvSource:
         # APP_DB__URL="sqlite://..." → {"db": {"url": "sqlite://..."}}
         # APP_DEBUG="true"            → {"debug": "true"}
 
-    Values are returned as strings; coercion to int/bool/etc. is the
-    schema adapter's job.
+    Values are returned as strings by default; coercion to int/bool/etc. is
+    the schema adapter's job.
+
+    Opt-in JSON decode: pass ``decode_json_for`` with one or more category
+    names (``"list"``, ``"dict"``, ``"bool"``, ``"int"``, ``"float"``) and
+    each value is best-effort parsed with ``json.loads``. The parsed value
+    replaces the raw string only when it is a JSON literal whose Python
+    type matches one of the listed categories; otherwise the raw string is
+    kept (the schema validator decides). The decode is opt-in because the
+    source is not allowed to assume the schema's shape — the default of
+    ``()`` preserves the v0.1.0 behaviour exactly.
+
+    Example::
+
+        EnvSource(prefix="APP_", decode_json_for=("list", "dict")).snapshot()
+        # APP_HOSTS='["a","b"]'            → {"hosts": ["a", "b"]}
+        # APP_RATE_LIMITS='{"market": 10}' → {"rate_limits": {"market": 10}}
+        # APP_DEBUG="true"                 → {"debug": "true"} (still string;
+        #                                     "bool" not in decode_json_for)
     """
 
-    def __init__(self, prefix: str = "", separator: str = "__") -> None:
+    def __init__(
+        self,
+        prefix: str = "",
+        separator: str = "__",
+        *,
+        decode_json_for: Iterable[JsonCategory] = (),
+    ) -> None:
         if not separator:
             raise ValueError("separator must be a non-empty string")
         self._prefix = prefix
         self._separator = separator
+        self._decode_json_for: frozenset[JsonCategory] = frozenset(decode_json_for)
 
     async def snapshot(self) -> dict[str, Any]:
         result: dict[str, Any] = {}
@@ -78,8 +104,20 @@ class EnvSource:
             if not stripped:
                 continue
             path = stripped.lower().split(self._separator)
-            _set_nested(result, path, value)
+            decoded = self._maybe_decode(value)
+            _set_nested(result, path, decoded)
         return result
+
+    def _maybe_decode(self, value: str) -> Any:
+        if not self._decode_json_for:
+            return value
+        try:
+            parsed = json.loads(value)
+        except (ValueError, TypeError):
+            return value
+        if _json_category_of(parsed) in self._decode_json_for:
+            return parsed
+        return value
 
 
 class FileSource:
@@ -126,7 +164,7 @@ class FileSource:
         return parsed
 
 
-def _set_nested(target: dict[str, Any], path: list[str], value: str) -> None:
+def _set_nested(target: dict[str, Any], path: list[str], value: Any) -> None:
     cursor = target
     for key in path[:-1]:
         existing = cursor.get(key)
@@ -135,6 +173,21 @@ def _set_nested(target: dict[str, Any], path: list[str], value: str) -> None:
             cursor[key] = existing
         cursor = existing
     cursor[path[-1]] = value
+
+
+def _json_category_of(value: Any) -> JsonCategory | None:
+    if isinstance(value, list):
+        return "list"
+    if isinstance(value, dict):
+        return "dict"
+    # bool is a subclass of int — check it first.
+    if isinstance(value, bool):
+        return "bool"
+    if isinstance(value, int):
+        return "int"
+    if isinstance(value, float):
+        return "float"
+    return None
 
 
 def _infer_format(path: Path) -> Format:

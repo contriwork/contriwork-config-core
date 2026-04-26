@@ -81,6 +81,120 @@ public sealed class SourcesTests
         Assert.Throws<System.ArgumentException>(() => new EnvSource(separator: string.Empty));
     }
 
+    // ── EnvSource: decodeJsonFor ────────────────────────────────────
+
+    [Fact]
+    public async Task Env_Decode_Json_List()
+    {
+        var prefix = $"TEST_CCC_{System.Guid.NewGuid():N}_";
+        System.Environment.SetEnvironmentVariable(prefix + "HOSTS", "[\"a\", \"b\", \"c\"]");
+        try
+        {
+            var src = new EnvSource(prefix: prefix, decodeJsonFor: new[] { JsonCategory.List });
+            var snap = await src.SnapshotAsync();
+            var hosts = Assert.IsType<List<object?>>(snap["hosts"]);
+            Assert.Equal(new object?[] { "a", "b", "c" }, hosts);
+        }
+        finally
+        {
+            System.Environment.SetEnvironmentVariable(prefix + "HOSTS", null);
+        }
+    }
+
+    [Fact]
+    public async Task Env_Decode_Json_Dict()
+    {
+        var prefix = $"TEST_CCC_{System.Guid.NewGuid():N}_";
+        System.Environment.SetEnvironmentVariable(prefix + "RATE_LIMITS", "{\"market_data\": 10}");
+        try
+        {
+            var src = new EnvSource(prefix: prefix, decodeJsonFor: new[] { JsonCategory.Dict });
+            var snap = await src.SnapshotAsync();
+            var rl = Assert.IsType<Dictionary<string, object?>>(snap["rate_limits"]);
+            Assert.Equal((long)10, rl["market_data"]);
+        }
+        finally
+        {
+            System.Environment.SetEnvironmentVariable(prefix + "RATE_LIMITS", null);
+        }
+    }
+
+    [Fact]
+    public async Task Env_Decode_Json_Off_Keeps_Raw_String()
+    {
+        var prefix = $"TEST_CCC_{System.Guid.NewGuid():N}_";
+        System.Environment.SetEnvironmentVariable(prefix + "HOSTS", "[\"a\", \"b\"]");
+        try
+        {
+            var src = new EnvSource(prefix: prefix);
+            var snap = await src.SnapshotAsync();
+            Assert.Equal("[\"a\", \"b\"]", snap["hosts"]);
+        }
+        finally
+        {
+            System.Environment.SetEnvironmentVariable(prefix + "HOSTS", null);
+        }
+    }
+
+    [Fact]
+    public async Task Env_Decode_Json_Invalid_Falls_Back_To_Raw()
+    {
+        var prefix = $"TEST_CCC_{System.Guid.NewGuid():N}_";
+        System.Environment.SetEnvironmentVariable(prefix + "HOSTS", "not-json");
+        try
+        {
+            var src = new EnvSource(prefix: prefix, decodeJsonFor: new[] { JsonCategory.List });
+            var snap = await src.SnapshotAsync();
+            Assert.Equal("not-json", snap["hosts"]);
+        }
+        finally
+        {
+            System.Environment.SetEnvironmentVariable(prefix + "HOSTS", null);
+        }
+    }
+
+    [Fact]
+    public async Task Env_Decode_Json_Wrong_Category_Falls_Back()
+    {
+        var prefix = $"TEST_CCC_{System.Guid.NewGuid():N}_";
+        System.Environment.SetEnvironmentVariable(prefix + "DEBUG", "true");
+        try
+        {
+            var src = new EnvSource(prefix: prefix, decodeJsonFor: new[] { JsonCategory.List });
+            var snap = await src.SnapshotAsync();
+            Assert.Equal("true", snap["debug"]);
+        }
+        finally
+        {
+            System.Environment.SetEnvironmentVariable(prefix + "DEBUG", null);
+        }
+    }
+
+    [Fact]
+    public async Task Env_Decode_Json_Bool_Int_Float()
+    {
+        var prefix = $"TEST_CCC_{System.Guid.NewGuid():N}_";
+        System.Environment.SetEnvironmentVariable(prefix + "DEBUG", "true");
+        System.Environment.SetEnvironmentVariable(prefix + "POOL", "10");
+        System.Environment.SetEnvironmentVariable(prefix + "RATIO", "0.5");
+        try
+        {
+            var src = new EnvSource(
+                prefix: prefix,
+                decodeJsonFor: new[] { JsonCategory.Bool, JsonCategory.Int, JsonCategory.Float });
+            var snap = await src.SnapshotAsync();
+            Assert.Equal(true, snap["debug"]);
+            Assert.Equal((long)10, snap["pool"]);
+            Assert.Equal(0.5, snap["ratio"]);
+        }
+        finally
+        {
+            System.Environment.SetEnvironmentVariable(prefix + "DEBUG", null);
+            System.Environment.SetEnvironmentVariable(prefix + "POOL", null);
+            System.Environment.SetEnvironmentVariable(prefix + "RATIO", null);
+        }
+    }
+
     // ── FileSource ──────────────────────────────────────────────────
 
     [Fact]

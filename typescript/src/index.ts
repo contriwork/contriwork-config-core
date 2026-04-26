@@ -47,5 +47,6 @@ export {
   FileSource,
   type FileSourceOptions,
   InMemorySource,
+  type JsonCategory,
   type Source,
 } from "./sources.js";

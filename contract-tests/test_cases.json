@@ -14,5 +14,39 @@
     "tags": ["happy-path", "edge-case", "security"],
     "skip_languages": []
   },
-  "cases": []
+  "cases": [
+    {
+      "name": "env_decode_json_list",
+      "description": "EnvSource(decode_json_for=['list']) parses a JSON list value into a list.",
+      "input": {
+        "method": "env_source.snapshot",
+        "env": { "APP_HOSTS": "[\"a\", \"b\", \"c\"]" },
+        "args": { "prefix": "APP_", "decode_json_for": ["list"] }
+      },
+      "expected_output": { "hosts": ["a", "b", "c"] },
+      "tags": ["happy-path"]
+    },
+    {
+      "name": "env_decode_json_off_keeps_raw_string",
+      "description": "Without decode_json_for, EnvSource keeps the v0.1.0 raw-string behaviour.",
+      "input": {
+        "method": "env_source.snapshot",
+        "env": { "APP_HOSTS": "[\"a\", \"b\"]" },
+        "args": { "prefix": "APP_" }
+      },
+      "expected_output": { "hosts": "[\"a\", \"b\"]" },
+      "tags": ["happy-path", "back-compat"]
+    },
+    {
+      "name": "env_decode_json_invalid_falls_back_to_raw",
+      "description": "A non-JSON value with decode_json_for enabled passes through as the raw string.",
+      "input": {
+        "method": "env_source.snapshot",
+        "env": { "APP_HOSTS": "not-json" },
+        "args": { "prefix": "APP_", "decode_json_for": ["list"] }
+      },
+      "expected_output": { "hosts": "not-json" },
+      "tags": ["edge-case"]
+    }
+  ]
 }
