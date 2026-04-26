@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 from pathlib import Path
 
 import pytest
@@ -17,6 +18,28 @@ from contriwork_config_core import (
     ValidationFailed,
     load_config,
 )
+
+
+def test_load_config_is_a_coroutine_function() -> None:
+    # Regression for the v0.1.0 integration footgun: callers wrote
+    # `cfg = load_config(...)` (no await), got a coroutine object back, and
+    # only learned via runtime TypeError that an await was needed. Static
+    # type checkers (mypy / pyright) catch this on the call site, but only
+    # if the user runs them — IDE hover and `inspect.signature(...)` should
+    # also surface that this is async. Keep this test as a tripwire so any
+    # future decorator chain that masks the coroutine marker
+    # (e.g. an ill-considered @functools.wraps) is caught immediately.
+    assert inspect.iscoroutinefunction(load_config), (
+        "load_config must be visible to inspect as a coroutine function — "
+        "if this fails, audit decorators / Protocol declarations on the "
+        "public load_config surface."
+    )
+    sig = inspect.signature(load_config)
+    assert list(sig.parameters) == [
+        "schema",
+        "sources",
+        "resolver",
+    ], f"load_config public signature drifted: got {list(sig.parameters)}"
 
 
 class AppConfig(BaseModel):
