@@ -299,4 +299,124 @@ public sealed class SourcesTests
             File.Delete(path);
         }
     }
+
+    // ── FileSource: dotenv format ───────────────────────────────────
+
+    [Fact]
+    public async Task File_Dotenv_Basic()
+    {
+        var path = Path.GetTempFileName() + ".env";
+        await File.WriteAllTextAsync(path, "DB_URL=sqlite://app.db\nDEBUG=true\n");
+        try
+        {
+            var snap = await new FileSource(path).SnapshotAsync();
+            Assert.Equal("sqlite://app.db", snap["DB_URL"]);
+            Assert.Equal("true", snap["DEBUG"]);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public async Task File_Dotenv_Quoted()
+    {
+        var path = Path.GetTempFileName() + ".env";
+        await File.WriteAllTextAsync(path, "NAME=\"ContriWork Inc.\"\nMOTTO='with spaces'\n");
+        try
+        {
+            var snap = await new FileSource(path).SnapshotAsync();
+            Assert.Equal("ContriWork Inc.", snap["NAME"]);
+            Assert.Equal("with spaces", snap["MOTTO"]);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public async Task File_Dotenv_Comments_And_Blanks()
+    {
+        var path = Path.GetTempFileName() + ".env";
+        await File.WriteAllTextAsync(path, "# top\n\nKEY=value\n   # indented\nOTHER=v2\n");
+        try
+        {
+            var snap = await new FileSource(path).SnapshotAsync();
+            Assert.Equal("value", snap["KEY"]);
+            Assert.Equal("v2", snap["OTHER"]);
+            Assert.Equal(2, snap.Count);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public async Task File_Dotenv_Equals_In_Value()
+    {
+        var path = Path.GetTempFileName() + ".env";
+        await File.WriteAllTextAsync(path, "URL=postgres://u:p=secret@host/db\n");
+        try
+        {
+            var snap = await new FileSource(path).SnapshotAsync();
+            Assert.Equal("postgres://u:p=secret@host/db", snap["URL"]);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public async Task File_Dotenv_Empty_Value()
+    {
+        var path = Path.GetTempFileName() + ".env";
+        await File.WriteAllTextAsync(path, "EMPTY=\nOTHER=v\n");
+        try
+        {
+            var snap = await new FileSource(path).SnapshotAsync();
+            Assert.Equal(string.Empty, snap["EMPTY"]);
+            Assert.Equal("v", snap["OTHER"]);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public async Task File_Dotenv_Export_Prefix_Stripped()
+    {
+        var path = Path.GetTempFileName() + ".env";
+        await File.WriteAllTextAsync(path, "export FOO=bar\nBAZ=qux\n");
+        try
+        {
+            var snap = await new FileSource(path).SnapshotAsync();
+            Assert.Equal("bar", snap["FOO"]);
+            Assert.Equal("qux", snap["BAZ"]);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public async Task File_Dotenv_Explicit_Format()
+    {
+        var path = Path.GetTempFileName() + ".cfg";
+        await File.WriteAllTextAsync(path, "KEY=value\n");
+        try
+        {
+            var snap = await new FileSource(path, FileFormat.Dotenv).SnapshotAsync();
+            Assert.Equal("value", snap["KEY"]);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
 }

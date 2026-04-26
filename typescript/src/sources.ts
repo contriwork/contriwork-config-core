@@ -13,7 +13,7 @@ import { parse as parseYaml } from "yaml";
 
 import { SourceParseFailed, SourceUnavailable } from "./errors.js";
 
-export type FileFormat = "yaml" | "json" | "toml";
+export type FileFormat = "yaml" | "json" | "toml" | "dotenv";
 
 /**
  * Categories of JSON literal that {@link EnvSource} may decode when its
@@ -125,9 +125,17 @@ export interface FileSourceOptions {
 }
 
 /**
- * Load a YAML / JSON / TOML file from disk. Format is inferred from the
- * extension (`.yaml` / `.yml` / `.json` / `.toml`) unless passed
- * explicitly.
+ * Load a YAML / JSON / TOML / dotenv file from disk. Format is inferred
+ * from the extension (`.yaml` / `.yml` / `.json` / `.toml` / `.env`)
+ * unless passed explicitly.
+ *
+ * The `"dotenv"` format reads `KEY=VALUE` lines from a `.env`-style file.
+ * The result is a **flat** record with **verbatim** keys (no lowercasing,
+ * no nesting) — callers wanting `EnvSource`-style transformation should
+ * compose this with their own schema. Subset supported: full-line `#`
+ * comments, blank lines, optional `export` prefix, surrounding single or
+ * double quotes around the value. Out of scope: variable interpolation
+ * (`KEY=$OTHER`), multi-line values, in-quote escapes.
  */
 export class FileSource implements Source {
   private readonly path: string;
@@ -184,17 +192,46 @@ function inferFormat(path: string): FileFormat {
   if (ext === ".yaml" || ext === ".yml") return "yaml";
   if (ext === ".json") return "json";
   if (ext === ".toml") return "toml";
+  if (ext === ".env") return "dotenv";
   throw new SourceParseFailed(
-    `cannot infer format from ${path}; pass format explicitly (yaml / json / toml)`,
+    `cannot infer format from ${path}; pass format explicitly (yaml / json / toml / dotenv)`,
   );
 }
 
 function parse(content: string, format: FileFormat): unknown {
+  // dotenv treats an empty file as an empty record — handle it before the
+  // generic blank-string short-circuit used by yaml/json/toml.
+  if (format === "dotenv") return parseDotenv(content);
   if (content.trim().length === 0) return null;
   if (format === "yaml") return parseYaml(content) as unknown;
   if (format === "json") return JSON.parse(content) as unknown;
   if (format === "toml") return parseToml(content);
   throw new SourceParseFailed(`unsupported format: ${format as string}`);
+}
+
+function parseDotenv(content: string): Record<string, string> {
+  const result: Record<string, string> = {};
+  for (const rawLine of content.split("\n")) {
+    let line = rawLine.replace(/\r$/, "").trim();
+    if (line.length === 0 || line.startsWith("#")) continue;
+    if (line.startsWith("export ")) {
+      line = line.slice("export ".length).trimStart();
+    }
+    const eqIdx = line.indexOf("=");
+    if (eqIdx < 0) continue;
+    const key = line.slice(0, eqIdx).trim();
+    if (key.length === 0) continue;
+    let value = line.slice(eqIdx + 1).trim();
+    if (
+      value.length >= 2 &&
+      value[0] === value[value.length - 1] &&
+      (value[0] === '"' || value[0] === "'")
+    ) {
+      value = value.slice(1, -1);
+    }
+    result[key] = value;
+  }
+  return result;
 }
 
 function setNested(

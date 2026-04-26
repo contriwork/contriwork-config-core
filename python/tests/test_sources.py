@@ -200,3 +200,70 @@ async def test_file_empty_json_returns_empty(tmp_path: Path) -> None:
     p.write_text("", encoding="utf-8")
     snapshot = await FileSource(p).snapshot()
     assert snapshot == {}
+
+
+# ── FileSource: dotenv format ───────────────────────────────────────
+
+
+async def test_file_dotenv_basic(tmp_path: Path) -> None:
+    p = tmp_path / "app.env"
+    p.write_text("DB_URL=sqlite://app.db\nDEBUG=true\n", encoding="utf-8")
+    snapshot = await FileSource(p).snapshot()
+    assert snapshot == {"DB_URL": "sqlite://app.db", "DEBUG": "true"}
+
+
+async def test_file_dotenv_quoted(tmp_path: Path) -> None:
+    p = tmp_path / "quoted.env"
+    p.write_text(
+        "NAME=\"ContriWork Inc.\"\nMOTTO='with spaces'\n",
+        encoding="utf-8",
+    )
+    snapshot = await FileSource(p).snapshot()
+    assert snapshot == {"NAME": "ContriWork Inc.", "MOTTO": "with spaces"}
+
+
+async def test_file_dotenv_comments_and_blanks(tmp_path: Path) -> None:
+    p = tmp_path / "mixed.env"
+    p.write_text(
+        "# top comment\n\nKEY=value\n   # indented comment\nOTHER=v2\n",
+        encoding="utf-8",
+    )
+    snapshot = await FileSource(p).snapshot()
+    assert snapshot == {"KEY": "value", "OTHER": "v2"}
+
+
+async def test_file_dotenv_equals_in_value(tmp_path: Path) -> None:
+    p = tmp_path / "eq.env"
+    p.write_text("URL=postgres://u:p=secret@host/db\n", encoding="utf-8")
+    snapshot = await FileSource(p).snapshot()
+    assert snapshot == {"URL": "postgres://u:p=secret@host/db"}
+
+
+async def test_file_dotenv_empty_value(tmp_path: Path) -> None:
+    p = tmp_path / "empty.env"
+    p.write_text("EMPTY=\nOTHER=v\n", encoding="utf-8")
+    snapshot = await FileSource(p).snapshot()
+    assert snapshot == {"EMPTY": "", "OTHER": "v"}
+
+
+async def test_file_dotenv_export_prefix_stripped(tmp_path: Path) -> None:
+    p = tmp_path / "export.env"
+    p.write_text("export FOO=bar\nBAZ=qux\n", encoding="utf-8")
+    snapshot = await FileSource(p).snapshot()
+    assert snapshot == {"FOO": "bar", "BAZ": "qux"}
+
+
+async def test_file_dotenv_explicit_format(tmp_path: Path) -> None:
+    # Extension is .cfg but explicit format="dotenv" is used.
+    p = tmp_path / "weird.cfg"
+    p.write_text("KEY=value\n", encoding="utf-8")
+    snapshot = await FileSource(p, format="dotenv").snapshot()
+    assert snapshot == {"KEY": "value"}
+
+
+async def test_file_dotenv_extension_inferred(tmp_path: Path) -> None:
+    p = tmp_path / "infer.env"
+    p.write_text("X=1\n", encoding="utf-8")
+    # No explicit format= passed; .env extension must infer dotenv.
+    snapshot = await FileSource(p).snapshot()
+    assert snapshot == {"X": "1"}

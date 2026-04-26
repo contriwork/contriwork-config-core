@@ -19,7 +19,7 @@ import yaml
 
 from .errors import SourceParseFailed, SourceUnavailable
 
-Format = Literal["yaml", "json", "toml"]
+Format = Literal["yaml", "json", "toml", "dotenv"]
 JsonCategory = Literal["list", "dict", "bool", "int", "float"]
 
 
@@ -121,12 +121,22 @@ class EnvSource:
 
 
 class FileSource:
-    """Load a YAML / JSON / TOML file from disk.
+    """Load a YAML / JSON / TOML / dotenv file from disk.
 
     Format is inferred from the extension (``.yaml`` / ``.yml`` / ``.json`` /
-    ``.toml``) unless ``format`` is passed explicitly. A missing file raises
-    :class:`SourceUnavailable` when ``required=True`` (the default); with
-    ``required=False`` an empty dict is returned.
+    ``.toml`` / ``.env``) unless ``format`` is passed explicitly. A missing
+    file raises :class:`SourceUnavailable` when ``required=True`` (the
+    default); with ``required=False`` an empty dict is returned.
+
+    The ``"dotenv"`` format reads ``KEY=VALUE`` lines from a ``.env``-style
+    file. The result is a **flat** dict with **verbatim** keys (no
+    lowercasing, no nesting) — callers wanting EnvSource-style transformation
+    should compose FileSource with their own schema, or pre-load the file
+    into ``os.environ`` and use :class:`EnvSource` instead. Subset
+    supported: full-line ``# comments``, blank lines, optional ``export``
+    prefix, surrounding single or double quotes around the value. Out of
+    scope: variable interpolation (``KEY=$OTHER``), multi-line values,
+    backslash escapes inside quotes.
     """
 
     def __init__(
@@ -198,8 +208,11 @@ def _infer_format(path: Path) -> Format:
         return "json"
     if suffix == ".toml":
         return "toml"
+    if suffix == ".env":
+        return "dotenv"
     raise SourceParseFailed(
-        f"cannot infer format from {path.name}; pass format= explicitly (yaml / json / toml)"
+        f"cannot infer format from {path.name}; "
+        f"pass format= explicitly (yaml / json / toml / dotenv)"
     )
 
 
@@ -212,5 +225,37 @@ def _parse(raw: bytes, fmt: Format) -> Any:
         return json.loads(raw)
     if fmt == "toml":
         return tomllib.loads(raw.decode("utf-8"))
+    if fmt == "dotenv":
+        return _parse_dotenv(raw)
     # Unreachable: Format is a Literal.
     raise SourceParseFailed(f"unsupported format: {fmt}")
+
+
+def _parse_dotenv(raw: bytes) -> dict[str, str]:
+    """Parse the dotenv subset documented on :class:`FileSource`.
+
+    Returns a flat dict of verbatim ``KEY: value`` pairs. Comments and
+    blank lines are skipped; surrounding single or double quotes are
+    stripped from the value; an optional ``export`` prefix on the line is
+    silently dropped. Anything else (interpolation, multi-line strings,
+    in-quote escapes) is out of scope and the line is taken literally.
+    """
+    text = raw.decode("utf-8-sig")
+    result: dict[str, str] = {}
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        if stripped.startswith("export "):
+            stripped = stripped[len("export ") :].lstrip()
+        if "=" not in stripped:
+            continue
+        key, _, value = stripped.partition("=")
+        key = key.strip()
+        if not key:
+            continue
+        value = value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in ("'", '"'):
+            value = value[1:-1]
+        result[key] = value
+    return result

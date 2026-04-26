@@ -47,6 +47,36 @@
       },
       "expected_output": { "hosts": "not-json" },
       "tags": ["edge-case"]
+    },
+    {
+      "name": "file_dotenv_basic",
+      "description": "FileSource(format='dotenv') parses KEY=VALUE lines into a flat verbatim dict.",
+      "input": {
+        "method": "file_source.snapshot",
+        "file": { "name": "app.env", "contents": "DB_URL=sqlite://app.db\nDEBUG=true\n" }
+      },
+      "expected_output": { "DB_URL": "sqlite://app.db", "DEBUG": "true" },
+      "tags": ["happy-path"]
+    },
+    {
+      "name": "file_dotenv_quoted_value",
+      "description": "Surrounding double or single quotes are stripped from the value.",
+      "input": {
+        "method": "file_source.snapshot",
+        "file": { "name": "quoted.env", "contents": "NAME=\"ContriWork Inc.\"\nMOTTO='with spaces'\n" }
+      },
+      "expected_output": { "NAME": "ContriWork Inc.", "MOTTO": "with spaces" },
+      "tags": ["happy-path"]
+    },
+    {
+      "name": "file_dotenv_comments_and_blanks_skipped",
+      "description": "Full-line # comments and blank lines are skipped; remaining KEY=VALUE pairs are returned.",
+      "input": {
+        "method": "file_source.snapshot",
+        "file": { "name": "mixed.env", "contents": "# top\n\nKEY=value\n   # indented\nOTHER=v2\n" }
+      },
+      "expected_output": { "KEY": "value", "OTHER": "v2" },
+      "tags": ["edge-case"]
     }
   ]
 }

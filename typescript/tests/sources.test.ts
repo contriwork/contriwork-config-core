@@ -218,4 +218,70 @@ describe("FileSource", () => {
       SourceUnavailable,
     );
   });
+
+  // ── dotenv format ────────────────────────────────────────────────
+
+  it("dotenv basic", async () => {
+    const p = join(dir, "app.env");
+    writeFileSync(p, "DB_URL=sqlite://app.db\nDEBUG=true\n");
+    expect(await new FileSource(p).snapshot()).toEqual({
+      DB_URL: "sqlite://app.db",
+      DEBUG: "true",
+    });
+  });
+
+  it("dotenv quoted", async () => {
+    const p = join(dir, "quoted.env");
+    writeFileSync(p, "NAME=\"ContriWork Inc.\"\nMOTTO='with spaces'\n");
+    expect(await new FileSource(p).snapshot()).toEqual({
+      NAME: "ContriWork Inc.",
+      MOTTO: "with spaces",
+    });
+  });
+
+  it("dotenv comments and blanks", async () => {
+    const p = join(dir, "mixed.env");
+    writeFileSync(
+      p,
+      "# top\n\nKEY=value\n   # indented\nOTHER=v2\n",
+    );
+    expect(await new FileSource(p).snapshot()).toEqual({
+      KEY: "value",
+      OTHER: "v2",
+    });
+  });
+
+  it("dotenv equals in value", async () => {
+    const p = join(dir, "eq.env");
+    writeFileSync(p, "URL=postgres://u:p=secret@host/db\n");
+    expect(await new FileSource(p).snapshot()).toEqual({
+      URL: "postgres://u:p=secret@host/db",
+    });
+  });
+
+  it("dotenv empty value", async () => {
+    const p = join(dir, "empty.env");
+    writeFileSync(p, "EMPTY=\nOTHER=v\n");
+    expect(await new FileSource(p).snapshot()).toEqual({
+      EMPTY: "",
+      OTHER: "v",
+    });
+  });
+
+  it("dotenv export prefix stripped", async () => {
+    const p = join(dir, "export.env");
+    writeFileSync(p, "export FOO=bar\nBAZ=qux\n");
+    expect(await new FileSource(p).snapshot()).toEqual({
+      FOO: "bar",
+      BAZ: "qux",
+    });
+  });
+
+  it("dotenv explicit format on non-.env extension", async () => {
+    const p = join(dir, "weird.cfg");
+    writeFileSync(p, "KEY=value\n");
+    expect(await new FileSource(p, { format: "dotenv" }).snapshot()).toEqual({
+      KEY: "value",
+    });
+  });
 });
