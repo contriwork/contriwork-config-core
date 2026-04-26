@@ -40,6 +40,7 @@ export {
   type SecretResolver,
 } from "./resolvers.js";
 export { type SchemaAdapter, ZodAdapter } from "./schema.js";
+export { secretStrOrEmpty, secretStrRequired } from "./secrets.js";
 export {
   EnvSource,
   type EnvSourceOptions,

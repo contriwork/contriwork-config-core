@@ -36,6 +36,7 @@ from .errors import (
 from .loader import load_config
 from .resolvers import ChainResolver, EnvResolver, FileResolver, SecretResolver
 from .schema import PydanticAdapter, SchemaAdapter
+from .secrets import secret_str_or_empty, secret_str_required
 from .sources import EnvSource, FileSource, InMemorySource, Source
 
 __all__ = [
@@ -58,6 +59,8 @@ __all__ = [
     "ValidationFailed",
     "__version__",
     "load_config",
+    "secret_str_or_empty",
+    "secret_str_required",
 ]
 
 try:
