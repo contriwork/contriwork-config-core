@@ -3,7 +3,7 @@
 
 # ---- build stage ----------------------------------------------------------
 # TEMPLATE_USAGE.md §3: replace @sha256:TODO with an actual digest before release.
-FROM python:3.13-slim-trixie@sha256:bada92bcc2794014c291cd97ac3604eb907746b9d3f4b4ff5a8a1ffeff40ceff AS build
+FROM python:3.14-slim-trixie@sha256:5b3879b6f3cb77e712644d50262d05a7c146b7312d784a18eff7ff5462e77033 AS build
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -24,7 +24,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv build --wheel --out-dir /wheels
 
 # ---- runtime stage --------------------------------------------------------
-FROM python:3.13-slim-trixie@sha256:bada92bcc2794014c291cd97ac3604eb907746b9d3f4b4ff5a8a1ffeff40ceff AS runtime
+FROM python:3.14-slim-trixie@sha256:5b3879b6f3cb77e712644d50262d05a7c146b7312d784a18eff7ff5462e77033 AS runtime
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
