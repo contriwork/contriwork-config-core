@@ -32,8 +32,7 @@ def secret_str_or_empty(value: SecretStr | None) -> str:
         return ""
     if not isinstance(value, SecretStr):
         raise TypeError(
-            f"secret_str_or_empty expected pydantic.SecretStr or None, "
-            f"got {type(value).__name__}"
+            f"secret_str_or_empty expected pydantic.SecretStr or None, got {type(value).__name__}"
         )
     return value.get_secret_value()
 
@@ -49,7 +48,6 @@ def secret_str_required(value: SecretStr | None, field_name: str) -> str:
         raise ValueError(f"required secret field {field_name!r} is None")
     if not isinstance(value, SecretStr):
         raise TypeError(
-            f"secret_str_required expected pydantic.SecretStr or None, "
-            f"got {type(value).__name__}"
+            f"secret_str_required expected pydantic.SecretStr or None, got {type(value).__name__}"
         )
     return value.get_secret_value()
