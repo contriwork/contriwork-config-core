@@ -14,5 +14,95 @@
     "tags": ["happy-path", "edge-case", "security"],
     "skip_languages": []
   },
-  "cases": []
+  "cases": [
+    {
+      "name": "env_decode_json_list",
+      "description": "EnvSource(decode_json_for=['list']) parses a JSON list value into a list.",
+      "input": {
+        "method": "env_source.snapshot",
+        "env": { "APP_HOSTS": "[\"a\", \"b\", \"c\"]" },
+        "args": { "prefix": "APP_", "decode_json_for": ["list"] }
+      },
+      "expected_output": { "hosts": ["a", "b", "c"] },
+      "tags": ["happy-path"]
+    },
+    {
+      "name": "env_decode_json_off_keeps_raw_string",
+      "description": "Without decode_json_for, EnvSource keeps the v0.1.0 raw-string behaviour.",
+      "input": {
+        "method": "env_source.snapshot",
+        "env": { "APP_HOSTS": "[\"a\", \"b\"]" },
+        "args": { "prefix": "APP_" }
+      },
+      "expected_output": { "hosts": "[\"a\", \"b\"]" },
+      "tags": ["happy-path", "back-compat"]
+    },
+    {
+      "name": "env_decode_json_invalid_falls_back_to_raw",
+      "description": "A non-JSON value with decode_json_for enabled passes through as the raw string.",
+      "input": {
+        "method": "env_source.snapshot",
+        "env": { "APP_HOSTS": "not-json" },
+        "args": { "prefix": "APP_", "decode_json_for": ["list"] }
+      },
+      "expected_output": { "hosts": "not-json" },
+      "tags": ["edge-case"]
+    },
+    {
+      "name": "file_dotenv_basic",
+      "description": "FileSource(format='dotenv') parses KEY=VALUE lines into a flat verbatim dict.",
+      "input": {
+        "method": "file_source.snapshot",
+        "file": { "name": "app.env", "contents": "DB_URL=sqlite://app.db\nDEBUG=true\n" }
+      },
+      "expected_output": { "DB_URL": "sqlite://app.db", "DEBUG": "true" },
+      "tags": ["happy-path"]
+    },
+    {
+      "name": "file_dotenv_quoted_value",
+      "description": "Surrounding double or single quotes are stripped from the value.",
+      "input": {
+        "method": "file_source.snapshot",
+        "file": { "name": "quoted.env", "contents": "NAME=\"ContriWork Inc.\"\nMOTTO='with spaces'\n" }
+      },
+      "expected_output": { "NAME": "ContriWork Inc.", "MOTTO": "with spaces" },
+      "tags": ["happy-path"]
+    },
+    {
+      "name": "file_dotenv_comments_and_blanks_skipped",
+      "description": "Full-line # comments and blank lines are skipped; remaining KEY=VALUE pairs are returned.",
+      "input": {
+        "method": "file_source.snapshot",
+        "file": { "name": "mixed.env", "contents": "# top\n\nKEY=value\n   # indented\nOTHER=v2\n" }
+      },
+      "expected_output": { "KEY": "value", "OTHER": "v2" },
+      "tags": ["edge-case"]
+    },
+    {
+      "name": "resolver_null_resolver_passthrough",
+      "description": "NullResolver returns the ${scheme:value} ref verbatim; load_config with NullResolver leaves refs untouched.",
+      "input": {
+        "method": "load_config",
+        "sources": [
+          { "type": "in_memory", "data": { "db_url": "${env:NOT_INTERPOLATED}" } }
+        ],
+        "resolver": "null"
+      },
+      "expected_output": { "db_url": "${env:NOT_INTERPOLATED}" },
+      "tags": ["happy-path", "resolver-opt-out"]
+    },
+    {
+      "name": "resolver_omitted_uses_env_resolver_default",
+      "description": "Omitting the resolver argument falls back to EnvResolver (env-only resolution) — the v0.1.0 default.",
+      "input": {
+        "method": "load_config",
+        "env": { "DB_URL_SECRET": "pg://from-env" },
+        "sources": [
+          { "type": "in_memory", "data": { "db_url": "${env:DB_URL_SECRET}" } }
+        ]
+      },
+      "expected_output": { "db_url": "pg://from-env" },
+      "tags": ["happy-path", "back-compat"]
+    }
+  ]
 }

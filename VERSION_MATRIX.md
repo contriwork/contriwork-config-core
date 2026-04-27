@@ -10,6 +10,7 @@ This file documents which language runtime versions and contract revision each r
 | 0.0.3   | 3.13   | 10.0 | 24   | v0       | pure-TS      | 2026-04-22 |
 | 0.0.4   | 3.13   | 10.0 | 24   | v0       | pure-TS      | 2026-04-22 (docs-only; per-registry READMEs) |
 | 0.1.0   | 3.13   | 10.0 | 24   | v1       | pure-TS      | 2026-04-22 (first behaviour-bearing release; contract v1) |
+| 0.2.0   | 3.13   | 10.0 | 24   | v1       | pure-TS      | 2026-04-27 (DW v0.1.0 integration backlog: 6 items, contract v1 additive) |
 
 ## Rules
 

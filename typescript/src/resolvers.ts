@@ -17,6 +17,26 @@ export interface SecretResolver {
   resolve(scheme: string, value: string): Promise<string>;
 }
 
+/**
+ * Explicit opt-out — every `${scheme:value}` is returned verbatim.
+ *
+ * Use this when secret resolution is not appropriate for the load path
+ * and the call site should read self-documentingly:
+ *
+ * ```ts
+ * await loadConfig({ schema, sources, resolver: new NullResolver() });
+ * ```
+ *
+ * is equivalent in semantics to passing `null` for `resolver` (refs pass
+ * through as literal strings) but names the intent at the call site.
+ * Mirrors the Python `NullResolver` class and the C# `NullResolver` class.
+ */
+export class NullResolver implements SecretResolver {
+  resolve(scheme: string, value: string): Promise<string> {
+    return Promise.resolve(`\${${scheme}:${value}}`);
+  }
+}
+
 /** Resolve `${env:NAME}` from `process.env`. */
 export class EnvResolver implements SecretResolver {
   static readonly scheme = "env";

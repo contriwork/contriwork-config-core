@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import os
 import tomllib
+from collections.abc import Iterable
 from pathlib import Path
 from typing import Any, Literal, Protocol, runtime_checkable
 
@@ -18,7 +19,8 @@ import yaml
 
 from .errors import SourceParseFailed, SourceUnavailable
 
-Format = Literal["yaml", "json", "toml"]
+Format = Literal["yaml", "json", "toml", "dotenv"]
+JsonCategory = Literal["list", "dict", "bool", "int", "float"]
 
 
 @runtime_checkable
@@ -59,15 +61,39 @@ class EnvSource:
         # APP_DB__URL="sqlite://..." → {"db": {"url": "sqlite://..."}}
         # APP_DEBUG="true"            → {"debug": "true"}
 
-    Values are returned as strings; coercion to int/bool/etc. is the
-    schema adapter's job.
+    Values are returned as strings by default; coercion to int/bool/etc. is
+    the schema adapter's job.
+
+    Opt-in JSON decode: pass ``decode_json_for`` with one or more category
+    names (``"list"``, ``"dict"``, ``"bool"``, ``"int"``, ``"float"``) and
+    each value is best-effort parsed with ``json.loads``. The parsed value
+    replaces the raw string only when it is a JSON literal whose Python
+    type matches one of the listed categories; otherwise the raw string is
+    kept (the schema validator decides). The decode is opt-in because the
+    source is not allowed to assume the schema's shape — the default of
+    ``()`` preserves the v0.1.0 behaviour exactly.
+
+    Example::
+
+        EnvSource(prefix="APP_", decode_json_for=("list", "dict")).snapshot()
+        # APP_HOSTS='["a","b"]'            → {"hosts": ["a", "b"]}
+        # APP_RATE_LIMITS='{"market": 10}' → {"rate_limits": {"market": 10}}
+        # APP_DEBUG="true"                 → {"debug": "true"} (still string;
+        #                                     "bool" not in decode_json_for)
     """
 
-    def __init__(self, prefix: str = "", separator: str = "__") -> None:
+    def __init__(
+        self,
+        prefix: str = "",
+        separator: str = "__",
+        *,
+        decode_json_for: Iterable[JsonCategory] = (),
+    ) -> None:
         if not separator:
             raise ValueError("separator must be a non-empty string")
         self._prefix = prefix
         self._separator = separator
+        self._decode_json_for: frozenset[JsonCategory] = frozenset(decode_json_for)
 
     async def snapshot(self) -> dict[str, Any]:
         result: dict[str, Any] = {}
@@ -78,17 +104,39 @@ class EnvSource:
             if not stripped:
                 continue
             path = stripped.lower().split(self._separator)
-            _set_nested(result, path, value)
+            decoded = self._maybe_decode(value)
+            _set_nested(result, path, decoded)
         return result
+
+    def _maybe_decode(self, value: str) -> Any:
+        if not self._decode_json_for:
+            return value
+        try:
+            parsed = json.loads(value)
+        except (ValueError, TypeError):
+            return value
+        if _json_category_of(parsed) in self._decode_json_for:
+            return parsed
+        return value
 
 
 class FileSource:
-    """Load a YAML / JSON / TOML file from disk.
+    """Load a YAML / JSON / TOML / dotenv file from disk.
 
     Format is inferred from the extension (``.yaml`` / ``.yml`` / ``.json`` /
-    ``.toml``) unless ``format`` is passed explicitly. A missing file raises
-    :class:`SourceUnavailable` when ``required=True`` (the default); with
-    ``required=False`` an empty dict is returned.
+    ``.toml`` / ``.env``) unless ``format`` is passed explicitly. A missing
+    file raises :class:`SourceUnavailable` when ``required=True`` (the
+    default); with ``required=False`` an empty dict is returned.
+
+    The ``"dotenv"`` format reads ``KEY=VALUE`` lines from a ``.env``-style
+    file. The result is a **flat** dict with **verbatim** keys (no
+    lowercasing, no nesting) — callers wanting EnvSource-style transformation
+    should compose FileSource with their own schema, or pre-load the file
+    into ``os.environ`` and use :class:`EnvSource` instead. Subset
+    supported: full-line ``# comments``, blank lines, optional ``export``
+    prefix, surrounding single or double quotes around the value. Out of
+    scope: variable interpolation (``KEY=$OTHER``), multi-line values,
+    backslash escapes inside quotes.
     """
 
     def __init__(
@@ -126,7 +174,7 @@ class FileSource:
         return parsed
 
 
-def _set_nested(target: dict[str, Any], path: list[str], value: str) -> None:
+def _set_nested(target: dict[str, Any], path: list[str], value: Any) -> None:
     cursor = target
     for key in path[:-1]:
         existing = cursor.get(key)
@@ -137,6 +185,21 @@ def _set_nested(target: dict[str, Any], path: list[str], value: str) -> None:
     cursor[path[-1]] = value
 
 
+def _json_category_of(value: Any) -> JsonCategory | None:
+    if isinstance(value, list):
+        return "list"
+    if isinstance(value, dict):
+        return "dict"
+    # bool is a subclass of int — check it first.
+    if isinstance(value, bool):
+        return "bool"
+    if isinstance(value, int):
+        return "int"
+    if isinstance(value, float):
+        return "float"
+    return None
+
+
 def _infer_format(path: Path) -> Format:
     suffix = path.suffix.lower()
     if suffix in (".yaml", ".yml"):
@@ -145,8 +208,11 @@ def _infer_format(path: Path) -> Format:
         return "json"
     if suffix == ".toml":
         return "toml"
+    if suffix == ".env":
+        return "dotenv"
     raise SourceParseFailed(
-        f"cannot infer format from {path.name}; pass format= explicitly (yaml / json / toml)"
+        f"cannot infer format from {path.name}; "
+        f"pass format= explicitly (yaml / json / toml / dotenv)"
     )
 
 
@@ -159,5 +225,37 @@ def _parse(raw: bytes, fmt: Format) -> Any:
         return json.loads(raw)
     if fmt == "toml":
         return tomllib.loads(raw.decode("utf-8"))
+    if fmt == "dotenv":
+        return _parse_dotenv(raw)
     # Unreachable: Format is a Literal.
     raise SourceParseFailed(f"unsupported format: {fmt}")
+
+
+def _parse_dotenv(raw: bytes) -> dict[str, str]:
+    """Parse the dotenv subset documented on :class:`FileSource`.
+
+    Returns a flat dict of verbatim ``KEY: value`` pairs. Comments and
+    blank lines are skipped; surrounding single or double quotes are
+    stripped from the value; an optional ``export`` prefix on the line is
+    silently dropped. Anything else (interpolation, multi-line strings,
+    in-quote escapes) is out of scope and the line is taken literally.
+    """
+    text = raw.decode("utf-8-sig")
+    result: dict[str, str] = {}
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        if stripped.startswith("export "):
+            stripped = stripped[len("export ") :].lstrip()
+        if "=" not in stripped:
+            continue
+        key, _, value = stripped.partition("=")
+        key = key.strip()
+        if not key:
+            continue
+        value = value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in ("'", '"'):
+            value = value[1:-1]
+        result[key] = value
+    return result

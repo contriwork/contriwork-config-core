@@ -8,6 +8,90 @@ Each release MUST contain three language sub-sections (`### Python`, `### C#`, `
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-04-27
+
+Six items distilled from the real-world Digital Worker integration of
+v0.1.0. Contract revision stays at **v1** — every change in this release
+is additive and the existing v1 surface is preserved exactly. See
+[`docs/v0.2.0-backlog.md`](./docs/v0.2.0-backlog.md) for the per-item
+Context / Problem / Proposal framing.
+
+Headline additions:
+
+- `EnvSource(decode_json_for=...)` — opt-in JSON decode for env values
+  whose JSON-decoded category matches one of `"list" / "dict" / "bool" /
+  "int" / "float"`. Default of empty preserves the v0.1.0 raw-string
+  behaviour exactly.
+- `FileSource(format="dotenv")` — native `.env` parsing (KEY=VALUE,
+  comments, blank lines, quoting, `export` prefix). `.env` extension is
+  auto-inferred.
+- `secret_str_or_empty` / `secret_str_required` (Python) and the parity
+  helpers in C# / TS — centralize the SecretStr unwrap pattern.
+- `NullResolver` — a named `SecretResolver` for the explicit opt-out
+  path; `load_config(resolver=None)` is mapped to `NullResolver()`
+  internally so callers and contract are uniformly aligned.
+
+Per-language details below.
+
+### Python
+
+- Added `EnvSource(decode_json_for=...)` opt-in JSON decode. Categories:
+  `"list"`, `"dict"`, `"bool"`, `"int"`, `"float"`. Decode is best-effort
+  — unparseable values pass through as the raw string, parsed values
+  whose category isn't enabled also pass through.
+- Added `FileSource(format="dotenv")` native dotenv parsing; `.env`
+  extension auto-inferred. Result is a flat dict with verbatim keys.
+- Added `secret_str_or_empty(value)` and
+  `secret_str_required(value, field_name)` helpers in the public
+  namespace. Both raise `TypeError` when handed a non-`SecretStr` input
+  to surface schema bugs early instead of silently coercing a plain `str`.
+- Added `NullResolver` to the public namespace. Maps the
+  `load_config(resolver=None)` opt-out to a named class internally so
+  the resolution path stays uniform.
+- `load_config` parameter signature now reads as the honest
+  `resolver: SecretResolver | None` in `inspect.signature` and IDE hover
+  (the `_DefaultResolverSentinel` is hidden via `typing.cast`). Public
+  behaviour is unchanged: omitting `resolver` still defaults to
+  `EnvResolver()`; explicit `None` still disables resolution.
+- Added regression test that `inspect.iscoroutinefunction(load_config)`
+  is `True` and the public parameter list is stable.
+- README: replaced the placeholder Quick start with a working FileSource
+  + EnvSource + PydanticAdapter example, and added a "Bootstrapping
+  inside an async server" section that documents the `uvicorn --reload`
+  trap and ships a runnable thread-isolated `run_async_blocking` helper.
+
+### C#
+
+- Added `JsonCategory` enum (`List` / `Dict` / `Bool` / `Int` / `Float`)
+  and the `decodeJsonFor` constructor parameter on `EnvSource`. Default
+  preserves the v0.1.0 string-only behaviour. Enum members are kept
+  identical to the cross-language string values for contract-fixture
+  parity (with an inline `CA1720` suppression).
+- Added `FileFormat.Dotenv` and the `.env` extension inference in
+  `FileSource`. Dotenv parsing is the same flat-verbatim subset as
+  Python and TypeScript.
+- Added `Secrets.SecretStrOrEmpty(string?)` and
+  `Secrets.SecretStrRequired(string?, string fieldName)` helpers as a
+  parity surface for the Python `secret_str_*` family.
+- Added `NullResolver : ISecretResolver`. `ConfigLoader.LoadConfigAsync`
+  maps an explicit `null` resolver argument to a `NullResolver` instance
+  internally.
+
+### npm
+
+- Added `JsonCategory` type union (`"list" | "dict" | "bool" | "int" |
+  "float"`) and the `decodeJsonFor` option on `EnvSourceOptions`. Default
+  preserves v0.1.0 behaviour.
+- Added `"dotenv"` to the `FileFormat` union and `.env` extension
+  inference in `FileSource`. Same flat-verbatim subset as Python and C#.
+- Added `secretStrOrEmpty(value)` and `secretStrRequired(value, fieldName)`
+  helpers as a parity surface for the Python `secret_str_*` family.
+  Input type is `string | null | undefined`.
+- Added `NullResolver` class implementing `SecretResolver`. `loadConfig`
+  maps an explicit `resolver: null` argument to a `NullResolver` instance
+  internally; passing `NullResolver` directly is the recommended named
+  opt-out.
+
 ## [0.1.0] — 2026-04-22
 
 First **behaviour-bearing** release. Contract revision bumps v0 → v1; the
@@ -151,7 +235,8 @@ Infrastructure smoke-test release. Publishes the scaffold to PyPI, NuGet, and np
 
 - Initial scaffold release on npm as `@contriwork/config-core`. The `0.0.0` placeholder previously published under the `pending` dist-tag is superseded; `0.0.1` becomes `latest`.
 
-[Unreleased]: https://github.com/contriwork/contriwork-config-core/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/contriwork/contriwork-config-core/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/contriwork/contriwork-config-core/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/contriwork/contriwork-config-core/compare/v0.0.4...v0.1.0
 [0.0.4]: https://github.com/contriwork/contriwork-config-core/compare/v0.0.3...v0.0.4
 [0.0.3]: https://github.com/contriwork/contriwork-config-core/compare/v0.0.2...v0.0.3

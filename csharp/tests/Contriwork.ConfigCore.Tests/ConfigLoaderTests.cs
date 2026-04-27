@@ -93,6 +93,7 @@ public sealed class ConfigLoaderTests
     [Fact]
     public async Task Explicit_Null_Resolver_Passes_Refs_Through()
     {
+        // resolver: null is mapped to NullResolver internally; refs pass through verbatim.
         var cfg = await ConfigLoader.LoadConfigAsync(
             new DataAnnotationsAdapter<AppConfig>(),
             new ISource[]
@@ -103,6 +104,22 @@ public sealed class ConfigLoaderTests
                 }),
             },
             resolver: null);
+        Assert.Equal("${env:NOT_INTERPOLATED}", cfg.DbUrl);
+    }
+
+    [Fact]
+    public async Task Explicit_NullResolver_Passes_Refs_Verbatim()
+    {
+        var cfg = await ConfigLoader.LoadConfigAsync(
+            new DataAnnotationsAdapter<AppConfig>(),
+            new ISource[]
+            {
+                new InMemorySource(new Dictionary<string, object?>
+                {
+                    ["db_url"] = "${env:NOT_INTERPOLATED}",
+                }),
+            },
+            resolver: new NullResolver());
         Assert.Equal("${env:NOT_INTERPOLATED}", cfg.DbUrl);
     }
 

@@ -37,9 +37,11 @@ export {
   EnvResolver,
   FileResolver,
   type FileResolverOptions,
+  NullResolver,
   type SecretResolver,
 } from "./resolvers.js";
 export { type SchemaAdapter, ZodAdapter } from "./schema.js";
+export { secretStrOrEmpty, secretStrRequired } from "./secrets.js";
 export {
   EnvSource,
   type EnvSourceOptions,
@@ -47,5 +49,6 @@ export {
   FileSource,
   type FileSourceOptions,
   InMemorySource,
+  type JsonCategory,
   type Source,
 } from "./sources.js";

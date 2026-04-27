@@ -21,8 +21,10 @@ public static class ConfigLoader
     /// <param name="schema">Adapter that validates the merged dict into <typeparamref name="T"/>.</param>
     /// <param name="sources">Ordered list of <see cref="ISource"/> instances; later sources override earlier ones.</param>
     /// <param name="resolver">
-    /// Optional <see cref="ISecretResolver"/> for <c>${...}</c> refs.
-    /// Pass <c>null</c> to disable secret resolution entirely. If omitted
+    /// Optional <see cref="ISecretResolver"/> for <c>${...}</c> refs. Pass
+    /// <c>null</c> to disable secret resolution entirely — this is mapped
+    /// to <see cref="NullResolver"/> internally so the resolution path
+    /// stays uniform; semantically the two are equivalent. If omitted
     /// (use <see cref="LoadConfigAsync{T}(ISchemaAdapter{T}, IEnumerable{ISource}, CancellationToken)"/>)
     /// the default <see cref="EnvResolver"/> is used.
     /// </param>
@@ -53,7 +55,10 @@ public static class ConfigLoader
             merged = DeepMerge.Merge(merged, snapshot);
         }
 
-        var resolved = await RefResolver.ResolveAsync(merged, resolver, cancellationToken).ConfigureAwait(false);
+        // Map explicit null to NullResolver so the call site reads
+        // self-documentingly when introspected from logs / tests.
+        var effectiveResolver = resolver ?? new NullResolver();
+        var resolved = await RefResolver.ResolveAsync(merged, effectiveResolver, cancellationToken).ConfigureAwait(false);
 
         if (resolved is not IReadOnlyDictionary<string, object?> resolvedDict)
         {
