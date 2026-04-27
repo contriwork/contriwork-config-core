@@ -89,6 +89,8 @@ External schemes (`${vault:…}`, `${aws:…}`, etc.) are provided by adapter pa
 
 - **Idempotency:** Calling `load_config` twice with the same `sources` and `resolver` (whose backing state has not changed) MUST produce equal output. This is the caller's way to reload: call again.
 
+- **Re-entrancy & bootstrap policy:** `load_config` is `async`/`Task`-returning by contract. The package does **not** provide a sync wrapper — synchronous bootstrap glue is caller policy because every app's import-time policy is different (hot-reload servers, telemetry, fallback config, lazy-init). The Python README documents one working pattern (a thread-isolated `asyncio.run` fallback) for callers who need a sync entry point under `uvicorn --reload`-style hot reload, where the user app is imported from inside an already-running event loop.
+
 ### `Source.snapshot`
 
 - **Canonical signature:** `snapshot() -> dict[str, Any]`
