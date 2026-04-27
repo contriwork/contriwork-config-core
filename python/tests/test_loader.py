@@ -13,6 +13,7 @@ from contriwork_config_core import (
     EnvSource,
     FileSource,
     InMemorySource,
+    NullResolver,
     PydanticAdapter,
     SecretRefUnresolved,
     ValidationFailed,
@@ -108,7 +109,19 @@ async def test_explicit_none_disables_refs() -> None:
         sources=[InMemorySource({"db_url": "${env:NOT_INTERPOLATED}"})],
         resolver=None,
     )
-    # When resolver=None, the literal string passes through unchanged.
+    # When resolver=None, load_config maps it to NullResolver internally
+    # and the literal string passes through unchanged.
+    assert cfg.db_url == "${env:NOT_INTERPOLATED}"
+
+
+async def test_explicit_null_resolver_passes_refs_verbatim() -> None:
+    # Same effect as resolver=None, but the call site reads
+    # self-documentingly: "I deliberately want refs to pass through."
+    cfg = await load_config(
+        schema=PydanticAdapter(AppConfig),
+        sources=[InMemorySource({"db_url": "${env:NOT_INTERPOLATED}"})],
+        resolver=NullResolver(),
+    )
     assert cfg.db_url == "${env:NOT_INTERPOLATED}"
 
 

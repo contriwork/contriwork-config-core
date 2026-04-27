@@ -45,6 +45,7 @@ Resolves secret references (`${scheme:value}`) found inside string leaves of the
 - `EnvResolver` — resolves `${env:NAME}` from the process environment.
 - `FileResolver(base_dir?: string)` — resolves `${file:/abs/path}` or `${file:relative}` (relative to `base_dir`) by reading the file contents, stripped of trailing whitespace.
 - `ChainResolver(*resolvers)` — tries each resolver in order; first one that claims the scheme wins.
+- `NullResolver` — explicit opt-out: every `${scheme:value}` is returned verbatim. Equivalent in semantics to passing `null` / `None` for the `resolver` parameter; named so the call site reads self-documentingly.
 
 External schemes (`${vault:…}`, `${aws:…}`, etc.) are provided by adapter packages that register additional `SecretResolver` instances.
 
@@ -66,7 +67,7 @@ External schemes (`${vault:…}`, `${aws:…}`, etc.) are provided by adapter pa
 - **Parameters:**
   - `schema` — a language-idiomatic type adapter: pydantic `BaseModel` class in Python, a POCO + `DataAnnotations` (or custom validator) in C#, a `zod` / `valibot` / `arktype` schema object in TypeScript. The package does not bundle a schema library — it consumes one via an adapter interface.
   - `sources` — ordered list of `Source` instances. Order is precedence: **later sources override earlier sources**. Empty list is an error (`VALIDATION_FAILED` — nothing to load).
-  - `resolver` — optional. If omitted, defaults to `EnvResolver()` (env-only secret resolution). Passing an explicit `None` / `null` disables secret resolution entirely (any `${…}` string passes through unchanged).
+  - `resolver` — optional. If omitted, defaults to `EnvResolver()` (env-only secret resolution). Passing an explicit `None` / `null` disables secret resolution entirely (any `${…}` string passes through unchanged); language implementations MAY map this to a `NullResolver()` instance internally so the resolution path stays uniform — semantically the two are equivalent. Passing a `NullResolver()` directly is the recommended named opt-out for code that wants the call site to read self-documentingly.
 
 - **Returns:** a fully-validated instance of the schema type. For Python pydantic, an instance of the `BaseModel` subclass. For C#, an instance of `TConfig`. For TypeScript, the `z.infer<typeof schema>` type.
 

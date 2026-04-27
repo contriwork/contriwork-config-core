@@ -77,6 +77,32 @@
       },
       "expected_output": { "KEY": "value", "OTHER": "v2" },
       "tags": ["edge-case"]
+    },
+    {
+      "name": "resolver_null_resolver_passthrough",
+      "description": "NullResolver returns the ${scheme:value} ref verbatim; load_config with NullResolver leaves refs untouched.",
+      "input": {
+        "method": "load_config",
+        "sources": [
+          { "type": "in_memory", "data": { "db_url": "${env:NOT_INTERPOLATED}" } }
+        ],
+        "resolver": "null"
+      },
+      "expected_output": { "db_url": "${env:NOT_INTERPOLATED}" },
+      "tags": ["happy-path", "resolver-opt-out"]
+    },
+    {
+      "name": "resolver_omitted_uses_env_resolver_default",
+      "description": "Omitting the resolver argument falls back to EnvResolver (env-only resolution) — the v0.1.0 default.",
+      "input": {
+        "method": "load_config",
+        "env": { "DB_URL_SECRET": "pg://from-env" },
+        "sources": [
+          { "type": "in_memory", "data": { "db_url": "${env:DB_URL_SECRET}" } }
+        ]
+      },
+      "expected_output": { "db_url": "pg://from-env" },
+      "tags": ["happy-path", "back-compat"]
     }
   ]
 }

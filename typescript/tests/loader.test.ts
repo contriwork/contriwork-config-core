@@ -9,6 +9,7 @@ import {
   EnvSource,
   FileSource,
   InMemorySource,
+  NullResolver,
   SecretRefUnresolved,
   ValidationFailed,
   ZodAdapter,
@@ -76,10 +77,20 @@ describe("loadConfig", () => {
   });
 
   it("explicit null resolver disables refs", async () => {
+    // null is mapped to NullResolver internally; refs pass through verbatim.
     const cfg = await loadConfig({
       schema: new ZodAdapter(AppConfig),
       sources: [new InMemorySource({ db_url: "${env:NOT_INTERPOLATED}" })],
       resolver: null,
+    });
+    expect(cfg.db_url).toBe("${env:NOT_INTERPOLATED}");
+  });
+
+  it("explicit NullResolver passes refs verbatim", async () => {
+    const cfg = await loadConfig({
+      schema: new ZodAdapter(AppConfig),
+      sources: [new InMemorySource({ db_url: "${env:NOT_INTERPOLATED}" })],
+      resolver: new NullResolver(),
     });
     expect(cfg.db_url).toBe("${env:NOT_INTERPOLATED}");
   });

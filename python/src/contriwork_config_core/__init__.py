@@ -34,7 +34,13 @@ from .errors import (
     ValidationFailed,
 )
 from .loader import load_config
-from .resolvers import ChainResolver, EnvResolver, FileResolver, SecretResolver
+from .resolvers import (
+    ChainResolver,
+    EnvResolver,
+    FileResolver,
+    NullResolver,
+    SecretResolver,
+)
 from .schema import PydanticAdapter, SchemaAdapter
 from .secrets import secret_str_or_empty, secret_str_required
 from .sources import EnvSource, FileSource, InMemorySource, Source
@@ -47,6 +53,7 @@ __all__ = [
     "FileResolver",
     "FileSource",
     "InMemorySource",
+    "NullResolver",
     "PydanticAdapter",
     "SchemaAdapter",
     "SecretRefMalformed",
