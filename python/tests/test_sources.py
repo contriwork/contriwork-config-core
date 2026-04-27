@@ -77,6 +77,60 @@ async def test_env_flat_key_no_separator(monkeypatch: pytest.MonkeyPatch) -> Non
     assert snapshot == {"debug": "true"}
 
 
+# ── EnvSource: decode_json_for ──────────────────────────────────────
+
+
+async def test_env_decode_json_list(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("APP_HOSTS", '["a", "b", "c"]')
+    src = EnvSource(prefix="APP_", decode_json_for=("list",))
+    snapshot = await src.snapshot()
+    assert snapshot == {"hosts": ["a", "b", "c"]}
+
+
+async def test_env_decode_json_dict(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("APP_RATE_LIMITS", '{"market_data": 10, "news": 2}')
+    src = EnvSource(prefix="APP_", decode_json_for=("dict",))
+    snapshot = await src.snapshot()
+    assert snapshot == {"rate_limits": {"market_data": 10, "news": 2}}
+
+
+async def test_env_decode_json_off_keeps_raw_string(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Back-compat: default is no decoding; v0.1.0 behaviour preserved.
+    monkeypatch.setenv("APP_HOSTS", '["a", "b"]')
+    src = EnvSource(prefix="APP_")
+    snapshot = await src.snapshot()
+    assert snapshot == {"hosts": '["a", "b"]'}
+
+
+async def test_env_decode_json_invalid_falls_back_to_raw(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Best-effort decode: unparseable value is passed through as a string.
+    monkeypatch.setenv("APP_HOSTS", "not-json")
+    src = EnvSource(prefix="APP_", decode_json_for=("list",))
+    snapshot = await src.snapshot()
+    assert snapshot == {"hosts": "not-json"}
+
+
+async def test_env_decode_json_wrong_category_falls_back(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Value parses as JSON but its category isn't enabled — keep raw string.
+    monkeypatch.setenv("APP_DEBUG", "true")
+    src = EnvSource(prefix="APP_", decode_json_for=("list",))
+    snapshot = await src.snapshot()
+    assert snapshot == {"debug": "true"}
+
+
+async def test_env_decode_json_bool_int_float(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("APP_DEBUG", "true")
+    monkeypatch.setenv("APP_POOL", "10")
+    monkeypatch.setenv("APP_RATIO", "0.5")
+    src = EnvSource(prefix="APP_", decode_json_for=("bool", "int", "float"))
+    snapshot = await src.snapshot()
+    assert snapshot == {"debug": True, "pool": 10, "ratio": 0.5}
+
+
 # ── FileSource ──────────────────────────────────────────────────────
 
 
@@ -146,3 +200,70 @@ async def test_file_empty_json_returns_empty(tmp_path: Path) -> None:
     p.write_text("", encoding="utf-8")
     snapshot = await FileSource(p).snapshot()
     assert snapshot == {}
+
+
+# ── FileSource: dotenv format ───────────────────────────────────────
+
+
+async def test_file_dotenv_basic(tmp_path: Path) -> None:
+    p = tmp_path / "app.env"
+    p.write_text("DB_URL=sqlite://app.db\nDEBUG=true\n", encoding="utf-8")
+    snapshot = await FileSource(p).snapshot()
+    assert snapshot == {"DB_URL": "sqlite://app.db", "DEBUG": "true"}
+
+
+async def test_file_dotenv_quoted(tmp_path: Path) -> None:
+    p = tmp_path / "quoted.env"
+    p.write_text(
+        "NAME=\"ContriWork Inc.\"\nMOTTO='with spaces'\n",
+        encoding="utf-8",
+    )
+    snapshot = await FileSource(p).snapshot()
+    assert snapshot == {"NAME": "ContriWork Inc.", "MOTTO": "with spaces"}
+
+
+async def test_file_dotenv_comments_and_blanks(tmp_path: Path) -> None:
+    p = tmp_path / "mixed.env"
+    p.write_text(
+        "# top comment\n\nKEY=value\n   # indented comment\nOTHER=v2\n",
+        encoding="utf-8",
+    )
+    snapshot = await FileSource(p).snapshot()
+    assert snapshot == {"KEY": "value", "OTHER": "v2"}
+
+
+async def test_file_dotenv_equals_in_value(tmp_path: Path) -> None:
+    p = tmp_path / "eq.env"
+    p.write_text("URL=postgres://u:p=secret@host/db\n", encoding="utf-8")
+    snapshot = await FileSource(p).snapshot()
+    assert snapshot == {"URL": "postgres://u:p=secret@host/db"}
+
+
+async def test_file_dotenv_empty_value(tmp_path: Path) -> None:
+    p = tmp_path / "empty.env"
+    p.write_text("EMPTY=\nOTHER=v\n", encoding="utf-8")
+    snapshot = await FileSource(p).snapshot()
+    assert snapshot == {"EMPTY": "", "OTHER": "v"}
+
+
+async def test_file_dotenv_export_prefix_stripped(tmp_path: Path) -> None:
+    p = tmp_path / "export.env"
+    p.write_text("export FOO=bar\nBAZ=qux\n", encoding="utf-8")
+    snapshot = await FileSource(p).snapshot()
+    assert snapshot == {"FOO": "bar", "BAZ": "qux"}
+
+
+async def test_file_dotenv_explicit_format(tmp_path: Path) -> None:
+    # Extension is .cfg but explicit format="dotenv" is used.
+    p = tmp_path / "weird.cfg"
+    p.write_text("KEY=value\n", encoding="utf-8")
+    snapshot = await FileSource(p, format="dotenv").snapshot()
+    assert snapshot == {"KEY": "value"}
+
+
+async def test_file_dotenv_extension_inferred(tmp_path: Path) -> None:
+    p = tmp_path / "infer.env"
+    p.write_text("X=1\n", encoding="utf-8")
+    # No explicit format= passed; .env extension must infer dotenv.
+    snapshot = await FileSource(p).snapshot()
+    assert snapshot == {"X": "1"}

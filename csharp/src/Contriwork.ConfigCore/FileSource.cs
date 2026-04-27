@@ -22,6 +22,15 @@ public enum FileFormat
 
     /// <summary>TOML (.toml).</summary>
     Toml,
+
+    /// <summary>
+    /// Dotenv (.env) — flat <c>KEY=VALUE</c> lines with full-line
+    /// <c>#</c> comments, blank lines, optional <c>export</c> prefix, and
+    /// surrounding single or double quotes around the value. Out of
+    /// scope: variable interpolation, multi-line values, in-quote escapes.
+    /// Result is a flat dict with verbatim keys (no lowercasing).
+    /// </summary>
+    Dotenv,
 }
 
 /// <summary>
@@ -110,8 +119,9 @@ public sealed class FileSource : ISource
             ".yaml" or ".yml" => FileFormat.Yaml,
             ".json" => FileFormat.Json,
             ".toml" => FileFormat.Toml,
+            ".env" => FileFormat.Dotenv,
             _ => throw new SourceParseFailedException(
-                $"cannot infer format from {Path.GetFileName(path)}; pass format explicitly (Yaml / Json / Toml)"),
+                $"cannot infer format from {Path.GetFileName(path)}; pass format explicitly (Yaml / Json / Toml / Dotenv)"),
         };
     }
 
@@ -122,8 +132,45 @@ public sealed class FileSource : ISource
             FileFormat.Json => ParseJson(content),
             FileFormat.Yaml => ParseYaml(content),
             FileFormat.Toml => ParseToml(content),
+            FileFormat.Dotenv => ParseDotenv(content),
             _ => throw new InvalidOperationException($"unsupported format: {format}"),
         };
+    }
+
+    private static Dictionary<string, object?> ParseDotenv(string content)
+    {
+        var result = new Dictionary<string, object?>();
+        foreach (var rawLine in content.Split('\n'))
+        {
+            var line = rawLine.TrimEnd('\r').Trim();
+            if (line.Length == 0 || line[0] == '#')
+            {
+                continue;
+            }
+            if (line.StartsWith("export ", StringComparison.Ordinal))
+            {
+                line = line["export ".Length..].TrimStart();
+            }
+            var eqIdx = line.IndexOf('=');
+            if (eqIdx < 0)
+            {
+                continue;
+            }
+            var key = line[..eqIdx].Trim();
+            if (key.Length == 0)
+            {
+                continue;
+            }
+            var value = line[(eqIdx + 1)..].Trim();
+            if (value.Length >= 2
+                && value[0] == value[^1]
+                && (value[0] == '"' || value[0] == '\''))
+            {
+                value = value[1..^1];
+            }
+            result[key] = value;
+        }
+        return result;
     }
 
     private static object? ParseJson(string content)

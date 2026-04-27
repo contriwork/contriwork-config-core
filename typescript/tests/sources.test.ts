@@ -80,6 +80,61 @@ describe("EnvSource", () => {
   it("empty separator throws", () => {
     expect(() => new EnvSource({ separator: "" })).toThrowError();
   });
+
+  // ── decodeJsonFor ────────────────────────────────────────────────
+
+  it("decode_json list", async () => {
+    setEnv("APP_HOSTS", '["a", "b", "c"]');
+    const snap = await new EnvSource({
+      prefix: "APP_",
+      decodeJsonFor: ["list"],
+    }).snapshot();
+    expect(snap).toEqual({ hosts: ["a", "b", "c"] });
+  });
+
+  it("decode_json dict", async () => {
+    setEnv("APP_RATE_LIMITS", '{"market_data": 10}');
+    const snap = await new EnvSource({
+      prefix: "APP_",
+      decodeJsonFor: ["dict"],
+    }).snapshot();
+    expect(snap).toEqual({ rate_limits: { market_data: 10 } });
+  });
+
+  it("decode_json off keeps raw string (back-compat)", async () => {
+    setEnv("APP_HOSTS", '["a", "b"]');
+    const snap = await new EnvSource({ prefix: "APP_" }).snapshot();
+    expect(snap).toEqual({ hosts: '["a", "b"]' });
+  });
+
+  it("decode_json invalid falls back to raw string", async () => {
+    setEnv("APP_HOSTS", "not-json");
+    const snap = await new EnvSource({
+      prefix: "APP_",
+      decodeJsonFor: ["list"],
+    }).snapshot();
+    expect(snap).toEqual({ hosts: "not-json" });
+  });
+
+  it("decode_json wrong category falls back", async () => {
+    setEnv("APP_DEBUG", "true");
+    const snap = await new EnvSource({
+      prefix: "APP_",
+      decodeJsonFor: ["list"],
+    }).snapshot();
+    expect(snap).toEqual({ debug: "true" });
+  });
+
+  it("decode_json bool / int / float", async () => {
+    setEnv("APP_DEBUG", "true");
+    setEnv("APP_POOL", "10");
+    setEnv("APP_RATIO", "0.5");
+    const snap = await new EnvSource({
+      prefix: "APP_",
+      decodeJsonFor: ["bool", "int", "float"],
+    }).snapshot();
+    expect(snap).toEqual({ debug: true, pool: 10, ratio: 0.5 });
+  });
 });
 
 describe("FileSource", () => {
@@ -162,5 +217,71 @@ describe("FileSource", () => {
     await expect(new FileSource(p).snapshot()).rejects.toBeInstanceOf(
       SourceUnavailable,
     );
+  });
+
+  // ── dotenv format ────────────────────────────────────────────────
+
+  it("dotenv basic", async () => {
+    const p = join(dir, "app.env");
+    writeFileSync(p, "DB_URL=sqlite://app.db\nDEBUG=true\n");
+    expect(await new FileSource(p).snapshot()).toEqual({
+      DB_URL: "sqlite://app.db",
+      DEBUG: "true",
+    });
+  });
+
+  it("dotenv quoted", async () => {
+    const p = join(dir, "quoted.env");
+    writeFileSync(p, "NAME=\"ContriWork Inc.\"\nMOTTO='with spaces'\n");
+    expect(await new FileSource(p).snapshot()).toEqual({
+      NAME: "ContriWork Inc.",
+      MOTTO: "with spaces",
+    });
+  });
+
+  it("dotenv comments and blanks", async () => {
+    const p = join(dir, "mixed.env");
+    writeFileSync(
+      p,
+      "# top\n\nKEY=value\n   # indented\nOTHER=v2\n",
+    );
+    expect(await new FileSource(p).snapshot()).toEqual({
+      KEY: "value",
+      OTHER: "v2",
+    });
+  });
+
+  it("dotenv equals in value", async () => {
+    const p = join(dir, "eq.env");
+    writeFileSync(p, "URL=postgres://u:p=secret@host/db\n");
+    expect(await new FileSource(p).snapshot()).toEqual({
+      URL: "postgres://u:p=secret@host/db",
+    });
+  });
+
+  it("dotenv empty value", async () => {
+    const p = join(dir, "empty.env");
+    writeFileSync(p, "EMPTY=\nOTHER=v\n");
+    expect(await new FileSource(p).snapshot()).toEqual({
+      EMPTY: "",
+      OTHER: "v",
+    });
+  });
+
+  it("dotenv export prefix stripped", async () => {
+    const p = join(dir, "export.env");
+    writeFileSync(p, "export FOO=bar\nBAZ=qux\n");
+    expect(await new FileSource(p).snapshot()).toEqual({
+      FOO: "bar",
+      BAZ: "qux",
+    });
+  });
+
+  it("dotenv explicit format on non-.env extension", async () => {
+    const p = join(dir, "weird.cfg");
+    writeFileSync(p, "KEY=value\n");
+    expect(await new FileSource(p, { format: "dotenv" }).snapshot()).toEqual({
+      KEY: "value",
+    });
   });
 });

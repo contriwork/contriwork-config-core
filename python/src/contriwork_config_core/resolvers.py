@@ -47,6 +47,22 @@ class EnvResolver:
         return resolved
 
 
+class NullResolver:
+    """Explicit opt-out — every ``${scheme:value}`` is returned verbatim.
+
+    Use this when secret resolution is not appropriate for the load path
+    and you want the API call to read self-documentingly:
+
+        await load_config(..., resolver=NullResolver())
+
+    is equivalent in semantics to ``resolver=None`` (refs pass through as
+    literal strings) but names the intent at the call site.
+    """
+
+    async def resolve(self, scheme: str, value: str) -> str:
+        return f"${{{scheme}:{value}}}"
+
+
 class FileResolver:
     """Resolve ``${file:path}`` by reading the file's contents.
 

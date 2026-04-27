@@ -4,6 +4,31 @@ using Xunit;
 
 namespace Contriwork.ConfigCore.Tests;
 
+public sealed class NullResolverTests
+{
+    [Fact]
+    public async Task NullResolver_Returns_Ref_Verbatim()
+    {
+        var r = new NullResolver();
+        Assert.Equal("${env:DB_URL}", await r.ResolveAsync("env", "DB_URL"));
+        Assert.Equal("${vault:secret/data/x}", await r.ResolveAsync("vault", "secret/data/x"));
+    }
+
+    [Fact]
+    public async Task NullResolver_Accepts_Any_Scheme()
+    {
+        var r = new NullResolver();
+        Assert.Equal("${anything:anyvalue}", await r.ResolveAsync("anything", "anyvalue"));
+    }
+
+    [Fact]
+    public async Task NullResolver_Handles_Empty_Value()
+    {
+        var r = new NullResolver();
+        Assert.Equal("${env:}", await r.ResolveAsync("env", string.Empty));
+    }
+}
+
 public sealed class ResolversTests
 {
     // ── EnvResolver ─────────────────────────────────────────────────

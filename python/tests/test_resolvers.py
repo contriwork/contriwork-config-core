@@ -10,6 +10,7 @@ from contriwork_config_core import (
     ChainResolver,
     EnvResolver,
     FileResolver,
+    NullResolver,
     SecretRefUnresolved,
     SecretSchemeUnsupported,
 )
@@ -111,3 +112,25 @@ async def test_chain_propagates_unresolved(monkeypatch: pytest.MonkeyPatch) -> N
 async def test_chain_empty_raises() -> None:
     with pytest.raises(SecretSchemeUnsupported):
         await ChainResolver().resolve("env", "X")
+
+
+# ── NullResolver ────────────────────────────────────────────────────
+
+
+async def test_null_resolver_returns_ref_verbatim() -> None:
+    # The whole point of NullResolver is to leave refs untouched in the
+    # merged config; the literal ${scheme:value} text comes back out.
+    assert await NullResolver().resolve("env", "DB_URL") == "${env:DB_URL}"
+    assert await NullResolver().resolve("vault", "secret/data/x") == ("${vault:secret/data/x}")
+
+
+async def test_null_resolver_does_not_raise_for_any_scheme() -> None:
+    # Unlike EnvResolver / FileResolver, NullResolver accepts every scheme;
+    # this is part of its "explicit opt-out" contract.
+    assert await NullResolver().resolve("anything", "anyvalue") == ("${anything:anyvalue}")
+
+
+async def test_null_resolver_handles_empty_value() -> None:
+    # Even a malformed-looking value is returned verbatim — NullResolver
+    # never raises SecretRefUnresolved.
+    assert await NullResolver().resolve("env", "") == "${env:}"

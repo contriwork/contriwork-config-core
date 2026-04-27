@@ -7,9 +7,31 @@ import {
   ChainResolver,
   EnvResolver,
   FileResolver,
+  NullResolver,
   SecretRefUnresolved,
   SecretSchemeUnsupported,
 } from "../src/index.js";
+
+describe("NullResolver", () => {
+  it("returns the ${scheme:value} ref verbatim", async () => {
+    const r = new NullResolver();
+    expect(await r.resolve("env", "DB_URL")).toBe("${env:DB_URL}");
+    expect(await r.resolve("vault", "secret/data/x")).toBe(
+      "${vault:secret/data/x}",
+    );
+  });
+
+  it("accepts any scheme without raising", async () => {
+    const r = new NullResolver();
+    expect(await r.resolve("anything", "anyvalue")).toBe(
+      "${anything:anyvalue}",
+    );
+  });
+
+  it("handles an empty value", async () => {
+    expect(await new NullResolver().resolve("env", "")).toBe("${env:}");
+  });
+});
 
 function mkTmp(): string {
   return mkdtempSync(join(tmpdir(), "ccc-"));

@@ -10,26 +10,35 @@ Order of operations (CONTRACT.md §Behavior):
 from __future__ import annotations
 
 from collections.abc import Sequence
+from typing import cast
 
 from ._merge import deep_merge
 from ._refs import resolve_refs
 from .errors import ValidationFailed
-from .resolvers import EnvResolver, SecretResolver
+from .resolvers import EnvResolver, NullResolver, SecretResolver
 from .schema import SchemaAdapter
 from .sources import Source
 
 
 class _DefaultResolverSentinel:
-    """Marker for ``resolver=<omitted>``; distinguishable from explicit ``None``."""
+    """Marker for ``resolver=<omitted>``; distinguishable from explicit ``None``.
+
+    Hidden from the public signature via :func:`typing.cast` so IDE hover
+    and ``inspect.signature`` show the honest type ``SecretResolver | None``;
+    runtime distinguishes "omitted" from "explicit None" via this object's
+    identity.
+    """
 
 
-_DEFAULT_RESOLVER = _DefaultResolverSentinel()
+# Cast at module scope (not in the parameter default) so ruff B008 is happy
+# and the public signature reads as the honest `SecretResolver | None`.
+_DEFAULT_RESOLVER: SecretResolver | None = cast("SecretResolver | None", _DefaultResolverSentinel())
 
 
 async def load_config[T](
     schema: SchemaAdapter[T],
     sources: Sequence[Source],
-    resolver: SecretResolver | None | _DefaultResolverSentinel = _DEFAULT_RESOLVER,
+    resolver: SecretResolver | None = _DEFAULT_RESOLVER,
 ) -> T:
     """Load, merge, resolve, and validate.
 
@@ -38,9 +47,16 @@ async def load_config[T](
         sources: Ordered list of :class:`Source` instances. Later sources
             override earlier ones. Empty list is an error.
         resolver: Optional :class:`SecretResolver` for ``${...}`` refs.
-            - If omitted, defaults to :class:`EnvResolver` (env-only).
-            - Pass ``None`` to disable secret resolution entirely (refs
-              pass through as literal strings).
+
+            - **Omitted** (the parameter is not passed): defaults to
+              :class:`EnvResolver` — env-only secret resolution, the
+              v0.1.0 default.
+            - **Explicit ``None``**: secret resolution is disabled and
+              every ``${scheme:value}`` passes through verbatim. Internally
+              this is mapped to :class:`NullResolver` so the resolution
+              path stays uniform; semantically the two are equivalent.
+            - **Any** :class:`SecretResolver` **instance** (including
+              :class:`NullResolver` directly): used as-is.
 
     Returns:
         An instance of the schema's target type.
@@ -59,9 +75,11 @@ async def load_config[T](
         snapshot = await source.snapshot()
         merged = deep_merge(merged, snapshot)
 
-    effective_resolver: SecretResolver | None
-    if isinstance(resolver, _DefaultResolverSentinel):
+    effective_resolver: SecretResolver
+    if resolver is _DEFAULT_RESOLVER:
         effective_resolver = EnvResolver()
+    elif resolver is None:
+        effective_resolver = NullResolver()
     else:
         effective_resolver = resolver
 

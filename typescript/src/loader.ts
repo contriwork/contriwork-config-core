@@ -9,7 +9,11 @@
  */
 
 import { ValidationFailed } from "./errors.js";
-import { EnvResolver, type SecretResolver } from "./resolvers.js";
+import {
+  EnvResolver,
+  NullResolver,
+  type SecretResolver,
+} from "./resolvers.js";
 import type { SchemaAdapter } from "./schema.js";
 import type { Source } from "./sources.js";
 import { deepMerge, isPlainObject } from "./_merge.js";
@@ -19,8 +23,12 @@ export interface LoadConfigOptions<T> {
   schema: SchemaAdapter<T>;
   sources: readonly Source[];
   /**
-   * `undefined` (omitted) → default {@link EnvResolver}.
-   * `null` → secret resolution is disabled; refs pass through as literals.
+   * - `undefined` (omitted): default {@link EnvResolver} is used.
+   * - `null`: secret resolution is disabled; refs pass through verbatim.
+   *   Internally mapped to a {@link NullResolver} so the resolution path
+   *   stays uniform — the two are semantically equivalent.
+   * - Any {@link SecretResolver} (including {@link NullResolver}
+   *   directly): used as-is.
    */
   resolver?: SecretResolver | null;
 }
@@ -45,8 +53,10 @@ export async function loadConfig<T>(options: LoadConfigOptions<T>): Promise<T> {
     merged = deepMerge(merged, snapshot);
   }
 
-  const effectiveResolver: SecretResolver | null =
-    options.resolver === undefined ? new EnvResolver() : options.resolver;
+  const effectiveResolver: SecretResolver =
+    options.resolver === undefined
+      ? new EnvResolver()
+      : (options.resolver ?? new NullResolver());
 
   const resolved = await resolveRefs(merged, effectiveResolver);
   const resolvedDict = isPlainObject(resolved) ? resolved : {};
