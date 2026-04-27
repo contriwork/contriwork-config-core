@@ -201,7 +201,7 @@ jobs:
         working-directory: python
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - uses: astral-sh/setup-uv@887a942a15af3a7626099df99e897a18d9e5ab3a # v5.1.0
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
       - name: Export resolved dependency requirements
         # Audit only resolved deps from the lockfile; the local project itself
         # is the root package and is excluded from the export. This avoids
